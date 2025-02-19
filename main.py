@@ -1,9 +1,215 @@
 import sys
 
-freelancers = {}
-projects = {}
-total_company_budget = 10000
-total_allocated_funds = 0
+freelancers = {
+    "FR001": {
+        "name": "Alice Johnson",
+        "age": 28,
+        "gender": "Female",
+        "location": "New York",
+        "skills": ["Python", "Machine Learning"],
+        "hourly_rate": 60.0,
+        "status": "Available",
+        "assigned_project": None,
+        "completed_projects": ["P0001"],
+        "total_earnings": 2400.0
+    },
+    "FR002": {
+        "name": "Bob Smith",
+        "age": 35,
+        "gender": "Male",
+        "location": "San Francisco",
+        "skills": ["JavaScript", "React"],
+        "hourly_rate": 50.0,
+        "status": "Assigned",
+        "assigned_project": "P0002",
+        "completed_projects": [],
+        "total_earnings": 0.0
+    },
+    "FR003": {
+        "name": "Charlie Davis",
+        "age": 29,
+        "gender": "Male",
+        "location": "Los Angeles",
+        "skills": ["Java", "Spring Boot"],
+        "hourly_rate": 70.0,
+        "status": "Assigned",
+        "assigned_project": "P0003",
+        "completed_projects": [],
+        "total_earnings": 0.0
+    },
+    "FR004": {
+        "name": "Diana Carter",
+        "age": 40,
+        "gender": "Female",
+        "location": "Chicago",
+        "skills": ["Python", "Data Science"],
+        "hourly_rate": 55.0,
+        "status": "Available",
+        "assigned_project": None,
+        "completed_projects": ["P0004", "P0005"],
+        "total_earnings": 6600.0
+    },
+    "FR005": {
+        "name": "Ethan Rogers",
+        "age": 31,
+        "gender": "Male",
+        "location": "Seattle",
+        "skills": ["C++", "Embedded Systems"],
+        "hourly_rate": 80.0,
+        "status": "Available",
+        "assigned_project": None,
+        "completed_projects": [],
+        "total_earnings": 0.0
+    },
+    "FR006": {
+        "name": "Fiona Martin",
+        "age": 27,
+        "gender": "Female",
+        "location": "Boston",
+        "skills": ["SQL", "Database Administration"],
+        "hourly_rate": 45.0,
+        "status": "Assigned",
+        "assigned_project": "P0006",
+        "completed_projects": [],
+        "total_earnings": 0.0
+    },
+    "FR007": {
+        "name": "George Wilson",
+        "age": 33,
+        "gender": "Male",
+        "location": "Denver",
+        "skills": ["Cloud Computing", "AWS"],
+        "hourly_rate": 75.0,
+        "status": "Available",
+        "assigned_project": None,
+        "completed_projects": ["P0007"],
+        "total_earnings": 3750.0
+    },
+    "FR008": {
+        "name": "Hannah White",
+        "age": 25,
+        "gender": "Female",
+        "location": "Austin",
+        "skills": ["JavaScript", "Vue.js"],
+        "hourly_rate": 50.0,
+        "status": "Available",
+        "assigned_project": None,
+        "completed_projects": [],
+        "total_earnings": 0.0
+    },
+    "FR009": {
+        "name": "Ian Thomas",
+        "age": 30,
+        "gender": "Male",
+        "location": "Phoenix",
+        "skills": ["Python", "Cybersecurity"],
+        "hourly_rate": 65.0,
+        "status": "Assigned",
+        "assigned_project": "P0008",
+        "completed_projects": [],
+        "total_earnings": 0.0
+    },
+    "FR010": {
+        "name": "Jasmine Lee",
+        "age": 26,
+        "gender": "Female",
+        "location": "Houston",
+        "skills": ["Go", "Microservices"],
+        "hourly_rate": 55.0,
+        "status": "Available",
+        "assigned_project": None,
+        "completed_projects": ["P0009"],
+        "total_earnings": 2750.0
+    }
+}
+
+projects = {
+    "P0001": {
+        "name": "AI Chatbot Development",
+        "budget": 3000.0,
+        "estimated_hours": 40,
+        "assigned_freelancer_id": "FR001",
+        "status": "Completed",
+        "actual_cost": 2400.0
+    },
+    "P0002": {
+        "name": "E-commerce Website",
+        "budget": 5000.0,
+        "estimated_hours": 80,
+        "assigned_freelancer_id": "FR002",
+        "status": "Active",
+        "actual_cost": 0.0
+    },
+    "P0003": {
+        "name": "Mobile App Development",
+        "budget": 7000.0,
+        "estimated_hours": 100,
+        "assigned_freelancer_id": "FR003",
+        "status": "Active",
+        "actual_cost": 0.0
+    },
+    "P0004": {
+        "name": "Data Analysis Dashboard",
+        "budget": 5000.0,
+        "estimated_hours": 60,
+        "assigned_freelancer_id": "FR004",
+        "status": "Completed",
+        "actual_cost": 3300.0
+    },
+    "P0005": {
+        "name": "Machine Learning Model",
+        "budget": 5000.0,
+        "estimated_hours": 60,
+        "assigned_freelancer_id": "FR004",
+        "status": "Completed",
+        "actual_cost": 3300.0
+    },
+    "P0006": {
+        "name": "Database Migration",
+        "budget": 3000.0,
+        "estimated_hours": 50,
+        "assigned_freelancer_id": "FR006",
+        "status": "Active",
+        "actual_cost": 0.0
+    },
+    "P0007": {
+        "name": "Cloud Infrastructure Setup",
+        "budget": 4000.0,
+        "estimated_hours": 50,
+        "assigned_freelancer_id": "FR007",
+        "status": "Completed",
+        "actual_cost": 3750.0
+    },
+    "P0008": {
+        "name": "Penetration Testing",
+        "budget": 4500.0,
+        "estimated_hours": 60,
+        "assigned_freelancer_id": "FR009",
+        "status": "Active",
+        "actual_cost": 0.0
+    },
+    "P0009": {
+        "name": "Microservices Architecture",
+        "budget": 3500.0,
+        "estimated_hours": 50,
+        "assigned_freelancer_id": "FR010",
+        "status": "Completed",
+        "actual_cost": 2750.0
+    },
+    "P0010": {
+        "name": "Blockchain Smart Contracts",
+        "budget": 6000.0,
+        "estimated_hours": 90,
+        "assigned_freelancer_id": None,
+        "status": "Active",
+        "actual_cost": 0.0
+    }
+}
+
+company_budget = {
+    "total_budget": 20000.0,
+    "total_allocated_funds": 10500.0
+}
 
 def app_main_menu():
     menu = 0
@@ -133,7 +339,7 @@ def budget_management_main_menu():
             print("Invalid input. Please enter a number between 1 and 2.")
             
 def adjust_budget():
-    global total_company_budget
+    global company_budget
     while True:
         try:
             new_budget = input("Enter new budget amount (or type CANCEL to exit): ").strip()
@@ -141,13 +347,13 @@ def adjust_budget():
                 return
             else:
                 new_budget = int(new_budget)
-            if new_budget < total_allocated_funds:
+            if new_budget < company_budget.get('total_allocated_funds'):
                 print("Error: Company budget cannot be lower than allocated funds.")
                 continue
             while True:
                 confirmation = input(f"Confirm budget update to ${new_budget}? (Y/N): ").strip().lower()
                 if confirmation == 'y':
-                    total_company_budget = new_budget
+                    company_budget['total_budget'] = new_budget
                     print("Budget updated successfully.")
                 elif confirmation == 'n':
                     print("Budget update canceled.")
