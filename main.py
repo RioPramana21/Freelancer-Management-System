@@ -428,116 +428,123 @@ def freelancer_management_main_menu():
 # Placeholder functions for Freelancer Management Features
 def hire_new_freelancer():
     """
-    Allows the admin to hire a new freelancer by entering necessary details.
-    Ensures proper validation, a cancel mechanism, and a confirmation step.
+    Displays a guided menu to hire a new freelancer by collecting the user's input
+    for name, age, gender, location, skills, and hourly rate. Each field leverages
+    a reusable input-validation helper function (get_valid_input) to ensure correctness,
+    and the user can type 'CANCEL' at any prompt to return to the previous menu.
+
+    Steps:
+        1. Prompt the user for freelancer name (alphabetic, ≤255 chars).
+        2. Prompt for age (integer ≥18).
+        3. Prompt for gender (Male/Female).
+        4. Prompt for location (non-empty, ≤255 chars, not just digits).
+        5. Prompt for skills (comma-separated, none purely numeric, each ≤255 chars).
+        6. Prompt for hourly rate (float > 0).
+        7. Display the collected details and confirm hiring.
+        8. If confirmed, generate the freelancer ID (FR###), store the freelancer, and
+           increment the global counter. Otherwise, return to the previous menu.
+
+    Returns:
+        None
+        - If the process is completed successfully, the freelancer information is added to
+          the global `freelancers` dictionary, and `app_state["freelancer_id_counter"]` is incremented.
+        - If canceled at any point, the function terminates early with no changes.
     """
+
     print("\n=== Hire New Freelancer ===")
     
-    # Collect freelancer details with validation and cancel option
-    while True:
-        name = input("Enter freelancer's name (or type 'CANCEL' to return): ").strip()
-        if name.upper() == "CANCEL":
-            print("Action canceled. Returning to main menu.")
-            return
-        if not name:
-            print("Invalid input. Name cannot be empty.")
-        elif not name.replace(" ", "").isalpha():
-            print("Invalid input. Name must be alphabets only.")
-        elif len(name) > 255:
-            print("Invalid input. Name's maximum length is 255 characters.")
-        else:
-            break
-    
-    while True:
-        age = input("Enter age (or type 'CANCEL' to return): ").strip()
-        if age.upper() == "CANCEL":
-            print("Action canceled. Returning to main menu.")
-            return
-        if age.isdigit() and int(age) >= 18:
-            age = int(age)
-            break
-        print("Invalid input. Age must be a number and at least 18.")
-    
-    while True:
-        gender = input("Enter gender (Male/Female, or type 'CANCEL' to return): ").strip().capitalize()
-        if gender.upper() == "CANCEL":
-            print("Action canceled. Returning to main menu.")
-            return
-        if gender in ["Male", "Female"]:
-            break
-        print("Invalid input. Please enter 'Male' or 'Female'.")
-    
-    while True:
-        location = input("Enter freelancer's location (or type 'CANCEL' to return): ").strip()
-        if location.upper() == "CANCEL":
-            print("Action canceled. Returning to main menu.")
-            return
-        if not location:
-            print("Invalid input. Location cannot be empty.")
-        elif location.isdigit():
-            print("Invalid input. Location cannot be only digits.")
-        elif len(location) > 255:
-            print("Invalid input. Location must not exceed 255 characters.")
-        else:
-            break
-    
-    while True:
-        skills = input("Enter freelancer's skills (comma-separated, or type 'CANCEL' to return): ").strip()
-        if skills.upper() == "CANCEL":
-            print("Action canceled. Returning to main menu.")
-            return
-        skills_list = [skill.strip() for skill in skills.split(",") if skill.strip()]
-        if all(not (skill.isdigit() or len(skill) > 255) for skill in skills_list) and skills_list:
-            break
-        print("Invalid input. Each skill cannot be empty, contain only numbers, or exceed 255 characters.\
-            Please enter valid skills (e.g. Python3, JavaScript).")
-    
-    while True:
-        hourly_rate = input("Enter hourly rate (or type 'CANCEL' to return): ").strip()
-        if hourly_rate.upper() == "CANCEL":
-            print("Action canceled. Returning to main menu.")
-            return
-        if hourly_rate.replace(".", "").isdigit():  # Allow decimal values
-            hourly_rate = float(hourly_rate)
-            if hourly_rate > 0:
-                break
-        print("Invalid input. Please enter a valid positive number for hourly rate (e.g. 20.5).")
-    
-    # Generate Freelancer ID in FR001 format
-    freelancer_id = f"FR{app_state.get('freelancer_id_counter'):03d}"
-    
-    # Confirmation Step
-    print("\nPlease confirm the new freelancer details:")
+    # 1) NAME (no conversion, just raw string)
+    name = get_valid_input(
+        prompt="Enter freelancer's name (or 'CANCEL' to return): ",
+        validation_func=validate_name,
+        allow_cancel=True  # Allows user to type CANCEL
+    )
+    if name is None:
+        # User canceled this step
+        return
+
+    # 2) AGE (convert to int, with a custom error message for invalid integer format)
+    age = get_valid_input(
+        prompt="Enter age (or 'CANCEL' to return): ",
+        validation_func=validate_age,
+        allow_cancel=True,
+        conversion_func=int,
+        conversion_error_msg="Please enter a valid integer for age (18 <= age < 100)."
+    )
+    if age is None:
+        return
+
+    # 3) GENDER (capitalize input, must be 'Male' or 'Female')
+    gender = get_valid_input(
+        prompt="Enter gender (Male/Female) or 'CANCEL' to return: ",
+        validation_func=validate_gender,
+        allow_cancel=True,
+        conversion_func=lambda x: x.lower().capitalize()
+    )
+    if gender is None:
+        return
+
+    # 4) LOCATION (raw string, validated for non-digit and ≤255 chars)
+    location = get_valid_input(
+        prompt="Enter location (or 'CANCEL' to return): ",
+        validation_func=validate_location,
+        allow_cancel=True
+    )
+    if location is None:
+        return
+
+    # 5) SKILLS (comma-separated, validated so none are numeric and each ≤255 chars)
+    skills = get_valid_input(
+        prompt="Enter comma-separated skills (or 'CANCEL' to return): ",
+        validation_func=validate_skills,
+        allow_cancel=True,
+        conversion_func=lambda x: [skill.strip() for skill in x.split(",") if skill.strip()] # also filters out empty skills
+    )
+    if skills is None:
+        return
+
+    # 6) HOURLY RATE (float > 0, with a custom error message for parsing)
+    hourly_rate = get_valid_input(
+        prompt="Enter hourly rate (or 'CANCEL' to return): ",
+        validation_func=validate_hourly_rate,
+        allow_cancel=True,
+        conversion_func=float,
+        conversion_error_msg="Please enter a valid numeric value for hourly rate."
+    )
+    if hourly_rate is None:
+        return
+
+    # Generate a unique Freelancer ID in FR001 format
+    freelancer_id = f"FR{app_state['freelancer_id_counter']:03d}"
+
+    # --- Confirmation Step ---
+    print("\n=== Confirm New Freelancer ===")
     print(f"ID: {freelancer_id}")
     print(f"Name: {name}")
     print(f"Age: {age}")
     print(f"Gender: {gender}")
     print(f"Location: {location}")
-    print(f"Skills: {', '.join(skills_list)}")
+    print(f"Skills: {', '.join(skills)}")
     print(f"Hourly Rate: ${hourly_rate}/hr")
-    
-    while True:
-        confirm = input("Confirm hiring? (Y/N): ").strip().upper()
-        if confirm == "Y":
-            freelancers[freelancer_id] = {
-                "name": name,
-                "age": age,
-                "gender": gender,
-                "location": location,
-                "skills": skills_list,
-                "hourly_rate": hourly_rate,
-                "assigned_project": None,
-                "completed_projects": [],
-                "total_earnings": 0.0
-            }
-            print(f"Freelancer {name} (ID: {freelancer_id}) has been successfully hired!")
-            app_state['freelancer_id_counter'] += 1  # Increment ID counter
-            return
-        elif confirm == "N":
-            print("Hiring process canceled. Returning to main menu.")
-            return
-        else:
-            print("Invalid input. Please enter 'Y' for Yes or 'N' for No.")
+
+    # Ask user to confirm (Y/N). If confirmed, add to global dictionary and increment counter.
+    if get_confirmation("Confirm hiring? (Y/N): "):
+        freelancers[freelancer_id] = {
+            "name": name,
+            "age": age,
+            "gender": gender,
+            "location": location,
+            "skills": skills,
+            "hourly_rate": hourly_rate,
+            "assigned_project": None,
+            "completed_projects": [],
+            "total_earnings": 0.0
+        }
+        app_state["freelancer_id_counter"] += 1
+        print(f"Freelancer {name} (ID: {freelancer_id}) has been successfully hired!")
+    else:
+        print("Hiring canceled.")
+
 
 def review_freelancer_profiles():
     """
