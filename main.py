@@ -599,7 +599,54 @@ def update_freelancer_info():
     print("\n[Update Freelancer Information] - Feature under development.")
 
 def fire_freelancer():
-    print("\n[Fire Freelancer] - Feature under development.")
+    """
+    Allows the admin to fire (remove) a freelancer from the system, but only if 
+    the freelancer is not currently assigned to any project.
+
+    Steps:
+        1. Prompt for freelancer ID or 'CANCEL' to return.
+        2. If the ID is valid, display freelancer details.
+        3. If the freelancer is assigned to a project, the firing is automatically canceled.
+        4. Otherwise, ask for confirmation. If confirmed, remove from the 'freelancers' dict.
+        5. Return to the previous menu.
+    """
+    print("\n=== Fire a Freelancer ===")
+
+    # If there are no freelancers, bail out early
+    if not freelancers:
+        print("No freelancers available to fire.")
+        return
+
+    while True:
+        fid = input("Enter a Freelancer ID to fire (or type 'CANCEL' to return): ").strip().upper()
+
+        # Cancel option
+        if fid == "CANCEL":
+            print("Returning to previous menu...")
+            return
+
+        # Check if the ID is valid
+        if fid in freelancers:
+            # Display the detailed profile for clarity
+            display_freelancer_details(fid)
+
+            # Check if assigned to a project
+            if freelancers[fid]["assigned_project"]:
+                print("Cannot fire a freelancer who is currently assigned to a project!")
+                print("Firing process canceled. Complete the project first.")
+                return  # We stop here
+
+            # If not assigned, confirm firing
+            if get_confirmation(f"Are you sure you want to fire {fid}? (Y/N): "):
+                del freelancers[fid]  # remove from the dictionary
+                print(f"Freelancer {fid} has been removed from the system.")
+            else:
+                print("Operation canceled. Freelancer not removed.")
+
+            return  # Exit after handling the chosen ID
+        else:
+            print("Invalid ID. Please enter a valid freelancer ID or 'CANCEL'.")
+
 
 def view_freelancers_performance_report():
     print("\n[View Freelancer Performance Report] - Feature under development.")
