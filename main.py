@@ -1229,7 +1229,56 @@ def finalize_project_completion(proj_id):
     company_budget["total_allocated_funds"] -= actual_cost
 
 def cancel_project():
-    print("\n[Cancel Project] - Feature under development.")
+    """
+    Cancels a currently active project by deleting it from the database,
+    freeing allocated funds, and making the assigned freelancer available.
+    """
+    print("\n=== Cancel a Project ===")
+
+    # Get all active projects
+    active_projects = get_active_projects()
+    if not active_projects:
+        print("No active projects found. Nothing to cancel.")
+        return
+
+    # Display active projects briefly
+    print("Active Projects:")
+    list_active_projects(active_projects)
+
+    # Prompt for project ID
+    proj_id = input("\nEnter the project ID to cancel (or 'CANCEL' to abort): ").strip()
+    if proj_id.upper() == "CANCEL":
+        print("Canceled.")
+        return
+
+    if proj_id not in active_projects:
+        print("Invalid project ID.")
+        return
+
+    # Show project details for confirmation
+    display_project_details(proj_id, projects[proj_id])
+
+    # Confirm
+    if not get_confirmation("\nConfirm cancellation? (Y/N): "):
+        print("Canceled.")
+        return
+
+    # Free the assigned freelancer
+    assigned = projects[proj_id]["assigned_freelancer_id"]
+    if assigned in freelancers:
+        freelancers[assigned]["status"] = "Available"
+        freelancers[assigned]["assigned_project"] = None
+
+    # Free allocated funds
+    allocated = projects[proj_id]["actual_cost"]
+    company_budget["total_allocated_funds"] -= allocated
+
+    # Remove the project completely
+    del projects[proj_id]
+
+    print(f"\nProject '{proj_id}' canceled and removed. Freelancer '{assigned}' is now available.")
+    print(f"Allocated funds of ${allocated} freed up.")
+
 
 def review_projects():
     """
