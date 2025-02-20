@@ -211,17 +211,18 @@ company_budget = {
     "total_allocated_funds": 10500.0
 }
 
+app_state = {
+    "freelancer_id_counter": None
+}
+
 def get_next_freelancer_id():
     if not freelancers:
         app_state["freelancer_id_counter"] = 1
     else:
         app_state["freelancer_id_counter"] = max(int(fid[2:]) for fid in freelancers.keys()) + 1
-        
-app_state = {
-    "freelancer_id_counter": get_next_freelancer_id()
-}
 
 def app_main_menu():
+    get_next_freelancer_id()
     menu = 0
     while menu != 4:
         print("\n=== Freelancer Management System ===")
@@ -401,7 +402,53 @@ def hire_new_freelancer():
             print("Invalid input. Please enter 'Y' for Yes or 'N' for No.")
 
 def review_freelancer_profiles():
-    print("\n[Review Freelancer Profiles] - Feature under development.")
+    """
+    Displays a list of all freelancer profiles.
+    Allows the admin to select a specific ID to view full details.
+    Returns to main menu when canceled.
+    """
+    print("\n=== Review Freelancer Profiles ===")
+
+    # Check if there are no freelancers
+    if not freelancers:
+        print("No freelancers found.")
+        return
+
+    # Display a summary of all freelancers
+    print("\nList of Freelancers (Summary):")
+    for fid, fdata in freelancers.items():
+        assigned = fdata["assigned_project"] if fdata["assigned_project"] else "None"
+        print(f"- ID: {fid}, Name: {fdata['name']}, Rate: ${fdata['hourly_rate']}/hr, Assigned: {assigned}")
+
+    # Prompt user to view details of a specific freelancer
+    while True:
+        print("\nEnter a Freelancer ID to view details, or type 'CANCEL' to return.")
+        menu = input("Your menu: ").strip()
+        if not menu:
+            print("Please enter a valid ID or 'CANCEL'.")
+            continue
+        if menu.upper() == "CANCEL":
+            print("Returning to main menu.")
+            return
+        if menu in freelancers:
+            f = freelancers[menu]
+            print("\n=== Freelancer Detailed Profile ===")
+            print(f"ID: {menu}")
+            print(f"Name: {f['name']}")
+            print(f"Age: {f['age']}")
+            print(f"Gender: {f['gender']}")
+            print(f"Location: {f['location']}")
+            print(f"Skills: {', '.join(f['skills'])}")
+            print(f"Hourly Rate: ${f['hourly_rate']}/hr")
+            assigned_project = f["assigned_project"] if f["assigned_project"] else "None"
+            print(f"Assigned Project: {assigned_project}")
+            completed = f['completed_projects'] if f['completed_projects'] else ["None"]
+            completed_str = ", ".join(completed)
+            print(f"Completed Projects: {completed_str}")
+            print(f"Total Earnings: ${f['total_earnings']}")
+        else:
+            print("Invalid ID. Please enter a valid freelancer ID or 'CANCEL'.")
+
 
 def search_freelancer():
     print("\n[Search Freelancer] - Feature under development.")
