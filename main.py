@@ -215,6 +215,155 @@ app_state = {
     "freelancer_id_counter": None
 }
 
+# ================ REUSABLE HELPER FUNCTIONS ================
+def get_valid_input(
+    prompt,
+    validation_func,
+    allow_cancel=True,
+    conversion_func=None,
+    conversion_error_msg="Invalid input format. Please try again."
+):
+    """
+    Generic input handler with validation, optional type conversion, and 'CANCEL' option.
+    
+    Parameters:
+        prompt (str): The text shown to the user for input.
+        validation_func (callable): A function that takes the (possibly converted)
+                                    value and returns (is_valid: bool, error_msg: str).
+        allow_cancel (bool): If True, typing 'CANCEL' returns None and cancels input.
+        conversion_func (callable or None): A function to convert the raw string
+                                            (e.g., int, float). If None, no conversion.
+        conversion_error_msg (str): A custom error message when conversion fails.
+
+    Returns:
+        The converted (or raw) value if valid, or None if the user typed 'CANCEL'.
+    """
+    while True:
+        user_input = input(prompt).strip()
+        
+        # Check for 'CANCEL'
+        if allow_cancel and user_input.upper() == "CANCEL":
+            print("Action canceled. Returning to previous menu...")
+            return None
+        
+        # Attempt type conversion if specified
+        if conversion_func:
+            try:
+                converted_user_input = conversion_func(user_input)
+            except ValueError:
+                print(conversion_error_msg)
+                continue
+        else:
+            # No conversion, use raw string
+            converted_user_input = user_input
+        
+        # Validate
+        is_valid, error_msg = validation_func(converted_user_input)
+        if is_valid:
+            return converted_user_input
+        else:
+            print(f"Invalid input: {error_msg}")
+
+def get_confirmation(prompt="Confirm? (Y/N): "):
+    """Handle yes/no confirmation prompts."""
+    while True:
+        confirm = input(prompt).strip().upper()
+        if confirm in ("Y", "N"):
+            return confirm == "Y"
+        print("Invalid input. Please enter Y or N.")
+
+def display_freelancer_details(freelancer_id):
+    """Display detailed information for a freelancer."""
+    if freelancer_id not in freelancers:
+        print("Invalid freelancer ID.")
+        return
+
+    f = freelancers[freelancer_id]
+    print("\n=== Freelancer Detailed Profile ===")
+    print(f"ID: {freelancer_id}")
+    print(f"Name: {f['name']}")
+    print(f"Age: {f['age']}")
+    print(f"Gender: {f['gender']}")
+    print(f"Location: {f['location']}")
+    print(f"Skills: {', '.join(f['skills'])}")
+    print(f"Hourly Rate: ${f['hourly_rate']}/hr")
+    print(f"Assigned Project: {f['assigned_project'] or 'None'}")
+    completed_projects = f['completed_projects'] or ["None"]
+    print(f"Completed Projects: {', '.join(completed_projects)}")
+    print(f"Total Earnings: ${f['total_earnings']}")
+
+# ================ VALIDATION FUNCTIONS ================
+def validate_name(name):
+    """
+    Checks:
+        - Not empty
+        - Only letters (plus space)
+        - <= 255 chars
+    """
+    if not name:
+        return False, "Name cannot be empty."
+    if not name.replace(" ", "").isalpha():
+        return False, "Name must contain only alphabets (A-Z)."
+    if len(name) > 255:
+        return False, "Name exceeds maximum length (255 characters)."
+    return True, ""
+
+def validate_age(age):
+    """
+    Checks:
+        - Age >= 18
+        - Age < 100
+    """
+    if age < 18:
+        return False, "Age must be at least 18."
+    if age >= 100:
+        return False, "Age cannot exceed 99."
+    return True, ""
+
+def validate_gender(gender):
+    """
+    Checks: must be 'Male' or 'Female'.
+    """
+    is_valid = gender in ["Male", "Female"]
+    return is_valid, "Gender must be Male or Female."
+
+def validate_location(location):
+    """
+    Checks:
+        - Not empty
+        - Not purely digits
+        - <= 255 chars
+    """
+    if not location:
+        return False, "Location cannot be empty."
+    if location.isdigit():
+        return False, "Location cannot be only digits."
+    if len(location) > 255:
+        return False, "Location exceeds maximum length (255 characters)."
+    return True, ""
+
+def validate_skills(skills_list: list):
+    """
+    Checks each skill:
+        - Not empty list
+        - No skill is purely numeric
+        - No skill > 255 chars
+    """
+    if not skills_list:
+        return False, "At least one skill is required (e.g. Python3, JavaScript)."
+    for skill in skills_list:
+        if skill.isdigit():
+            return False, f"Skill '{skill}' cannot be only numbers. Please enter valid skills (e.g. Python3, JavaScript)"
+        if len(skill) > 255:
+            return False, f"Skill '{skill}' exceeds 255 characters."
+    return True, ""
+
+def validate_hourly_rate(rate: float):
+    """Checks that rate > 0."""
+    if rate <= 0:
+        return False, "Hourly rate must be greater than zero."
+    return True, ""
+
 def get_next_freelancer_id():
     if not freelancers:
         app_state["freelancer_id_counter"] = 1
