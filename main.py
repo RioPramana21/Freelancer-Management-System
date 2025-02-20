@@ -972,7 +972,98 @@ def fire_freelancer():
 
 
 def view_freelancers_performance_report():
-    print("\n[View Freelancer Performance Report] - Feature under development.")
+    """
+    Displays a menu to view the freelancers' performance reports in different ways.
+
+    Sorting options:
+      1. Default order (sorted by ID ascending)
+      2. Total earnings descending
+      3. Total earnings ascending
+      4. Return to previous menu
+
+    The function collects performance data, sorts it based on the user's choice, and displays it in a tabular format.
+    """
+    print("\n=== Freelancers Performance Report ===")
+    
+    if not freelancers:
+        print("No freelancers available. No data to display.")
+        return
+
+    menu = "0"
+    while menu != "4":
+        print("\nHow would you like to view the performance report?")
+        print("1. Default order (sorted by ID ascending)")
+        print("2. Total earnings descending")
+        print("3. Total earnings ascending")
+        print("4. Return to previous menu")
+        
+        menu = input("Enter your choice (1-4): ").strip()
+
+        if menu == "4":
+            print("Returning to previous menu...")
+            return
+
+        performance_data, total_earnings_sum = get_performance_data()
+
+        if menu == "1":
+            performance_data.sort(key=lambda x: x["id"])
+        elif menu == "2":
+            performance_data.sort(key=lambda x: x["total_earnings"], reverse=True)
+        elif menu == "3":
+            performance_data.sort(key=lambda x: x["total_earnings"])
+        else:
+            print("Invalid input. Please enter a number between 1 and 4.")
+            continue
+
+        print_performance_report(performance_data, total_earnings_sum)
+
+
+def get_performance_data():
+    """
+    Collects performance data for all freelancers.
+
+    Returns:
+        A tuple (performance_data, total_earnings_sum) where:
+          - performance_data is a list of dictionaries containing:
+              'id', 'name', 'total_earnings', 'num_completed', and 'hourly_rate'
+          - total_earnings_sum is the sum of total earnings for all freelancers.
+    """
+    performance_data = []
+    total_earnings_sum = 0.0
+
+    for fid, fdata in freelancers.items():
+        total_earnings = fdata.get("total_earnings", 0.0)
+        total_earnings_sum += total_earnings
+
+        performance_data.append({
+            "id": fid,
+            "name": fdata["name"],
+            "total_earnings": total_earnings,
+            "num_completed": len(fdata.get("completed_projects", [])),
+            "hourly_rate": fdata.get("hourly_rate", 0.0)
+        })
+    
+    return performance_data, total_earnings_sum
+
+
+def print_performance_report(performance_data, total_earnings_sum):
+    """
+    Displays the performance data in a tabular format and prints summary statistics.
+    """
+    print("\nID     | Name               | Completed Proj | Hourly Rate | Total Earnings")
+    print("-------+---------------------+-----------------+-------------+---------------")
+    for pdata in performance_data:
+        print(f"{pdata['id']:<6} | {pdata['name']:<18} | {pdata['num_completed']:^15} | "
+              f"${pdata['hourly_rate']:^11.2f} | ${pdata['total_earnings']:^13.2f}")
+
+    total_freelancers = len(performance_data)
+    avg_earnings = total_earnings_sum / total_freelancers if total_freelancers else 0.0
+
+    print("\n=== Summary ===")
+    print(f"Total Freelancers: {total_freelancers}")
+    print(f"Overall Total Earnings: ${total_earnings_sum:.2f}")
+    print(f"Average Earnings per Freelancer: ${avg_earnings:.2f}")
+
 
 def project_management_main_menu():
     while True:
