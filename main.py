@@ -247,7 +247,6 @@ def app_main_menu():
             
 # Placeholder Functions for Sub-Menus
 def freelancer_management_main_menu():
-    freelancer_id_counter = get_next_freelancer_id()
     while True:
         print("\n=== Freelancer Management ===")
         print("1. Hire New Freelancer")
@@ -276,16 +275,6 @@ def freelancer_management_main_menu():
             return
         else:
             print("Invalid input. Please enter a number between 1 and 7.")
-
-def get_next_freelancer_id():
-    """
-    Determines the next freelancer ID by looking at the highest existing ID in the freelancers dictionary.
-    """
-    if not freelancers:
-        return 1  # Start from 1 if no freelancers exist
-    
-    max_id = max(int(id[2:]) for id in freelancers.keys())
-    return max_id + 1
 
 # Placeholder functions for Freelancer Management Features
 def hire_new_freelancer():
