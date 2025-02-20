@@ -261,7 +261,7 @@ def freelancer_management_main_menu():
         menu = input("Enter your menu (1-7): ").strip()
         
         if menu == "1":
-            hire_new_freelancer(freelancer_id_counter)
+            hire_new_freelancer()
         elif menu == "2":
             review_freelancer_profiles()
         elif menu == "3":
@@ -303,7 +303,7 @@ def hire_new_freelancer():
             return
         if not name:
             print("Invalid input. Name cannot be empty.")
-        elif name.replace(" ", "").isalpha():
+        elif not name.replace(" ", "").isalpha():
             print("Invalid input. Name must be alphabets only.")
         elif len(name) > 255:
             print("Invalid input. Name's maximum length is 255 characters.")
@@ -349,7 +349,7 @@ def hire_new_freelancer():
             print("Action canceled. Returning to main menu.")
             return
         skills_list = [skill.strip() for skill in skills.split(",") if skill.strip()]
-        if all(not (skill.isdigit() and len(skill) > 255) for skill in skills_list) and skills_list:
+        if all(not (skill.isdigit() or len(skill) > 255) for skill in skills_list) and skills_list:
             break
         print("Invalid input. Each skill cannot be empty, contain only numbers, or exceed 255 characters.\
             Please enter valid skills (e.g. Python3, JavaScript).")
