@@ -1100,7 +1100,95 @@ def cancel_project():
     print("\n[Cancel Project] - Feature under development.")
 
 def review_projects():
-    print("\n[Review Projects] - Feature under development.")
+    """
+    Displays a menu to review existing projects in different ways.
+
+    Options:
+      1. All Projects
+      2. Active Projects
+      3. Completed Projects
+      4. Return to previous menu
+
+    The function filters project data based on the user's choice and displays it
+    in a readable format.
+    """
+    print("\n=== Review Projects ===")
+    
+    if not projects:
+        print("No projects found in the system.")
+        return
+
+    menu = "0"
+    while menu != "4":
+        print("\nHow would you like to view the projects?")
+        print("1. All Projects")
+        print("2. Active Projects")
+        print("3. Completed Projects")
+        print("4. Return to previous menu")
+
+        menu = input("Enter your choice (1-4): ").strip()
+
+        if menu == "4":
+            print("Returning to previous menu...")
+            return
+
+        # Collect all projects into a list of dicts
+        projects_data = get_projects_data()
+
+        # Filter the list based on the user's choice
+        if menu == "1":
+            filtered_data = projects_data  # No filter => Show all
+            print("\n=== All Projects ===")
+        elif menu == "2":
+            filtered_data = [p for p in projects_data if p["status"] == "Active"]
+            print("\n=== Active Projects ===")
+        elif menu == "3":
+            filtered_data = [p for p in projects_data if p["status"] == "Completed"]
+            print("\n=== Completed Projects ===")
+        else:
+            print("Invalid input. Please enter a number between 1 and 4.")
+            continue
+
+        # Display the final list of projects
+        print_projects_report(filtered_data)
+
+
+def get_projects_data():
+    """
+    Gathers project data from the global 'projects' dictionary and
+    returns it as a list of dicts for easier manipulation.
+    """
+    data = []
+    for project_id, info in projects.items():
+        data.append({
+            "id": project_id,
+            "name": info.get("name", "N/A"),
+            "budget": info.get("budget", 0),
+            "estimated_hours": info.get("estimated_hours", 0),
+            "assigned_freelancer_id": info.get("assigned_freelancer_id", "N/A"),
+            "status": info.get("status", "N/A")
+        })
+    return data
+
+
+def print_projects_report(projects_list):
+    """
+    Prints a formatted report of the given list of projects.
+    If the list is empty, prints a 'No projects found' message.
+    """
+    if not projects_list:
+        print("No projects found.")
+        return
+
+    for proj in projects_list:
+        print(f"  Project ID           : {proj['id']}")
+        print(f"  Name                 : {proj['name']}")
+        print(f"  Budget               : {proj['budget']}")
+        print(f"  Estimated Hours      : {proj['estimated_hours']}")
+        print(f"  Assigned Freelancer  : {proj['assigned_freelancer_id']}")
+        print(f"  Status               : {proj['status']}")
+        print("-" * 40)
+
 
 def budget_management_main_menu():
     while True:
