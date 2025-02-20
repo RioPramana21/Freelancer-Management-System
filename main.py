@@ -1094,7 +1094,139 @@ def assign_freelancer_to_project():
     print("\n[Assign Freelancer to Project] - Feature under development.")
 
 def mark_project_completed():
-    print("\n[Mark Project as Completed] - Feature under development.")
+    """
+    Marks an active project as completed.
+
+    Steps:
+      1. Lists all active projects (status == 'Active').
+      2. Prompts the user for a project ID or an option to cancel.
+      3. Displays the chosen project's details and asks for final confirmation.
+      4. Sets project's status to 'Completed'.
+      5. Frees up the assigned freelancer (status to 'Available'), sets assigned_project to None,
+         updates freelancer's total_earnings by the project's actual_cost, and appends the project ID
+         to the freelancer's completed_projects list.
+      6. Deducts the project's actual_cost from the company's total_budget and total_allocated_funds.
+      7. Prints status messages for user feedback.
+    """
+    print("\n=== Mark Project as Completed ===")
+
+    # 1) Get all active projects
+    active_projects = get_active_projects()
+    if not active_projects:
+        print("No active projects found. Nothing to mark as completed.")
+        return
+
+    # 2) Display active projects for reference
+    list_active_projects(active_projects)
+
+    # Prompt user for project ID (with 'CANCEL' to return)
+    project_id = get_project_id_from_user(active_projects)
+    if not project_id:
+        # Means user typed 'CANCEL', so we abort
+        print("Operation canceled.")
+        return
+
+    # 3) Display the project details before final confirmation
+    display_project_details(project_id, projects[project_id])
+
+    # Confirm completion
+    if not get_confirmation("\nConfirm completion? (Y/N): "):
+        print("Operation canceled.")
+        return
+
+    # 4 & 5 & 6) Perform Completion Steps
+    finalize_project_completion(project_id)
+
+    # 7) Print success messages
+    assigned_freelancer_id = projects[project_id]["assigned_freelancer_id"]
+    actual_cost = projects[project_id]["actual_cost"]
+    print(f"\nProject '{project_id}' has been marked as COMPLETED.")
+    print(f"Freelancer '{assigned_freelancer_id}' is now AVAILABLE.")
+    print(f"Company budget and allocated funds have been reduced by {actual_cost}.")
+    print(f"Freelancer '{assigned_freelancer_id}' earnings increased by {actual_cost}.")
+
+
+# ================= HELPER FUNCTIONS =================
+
+def get_active_projects():
+    """
+    Returns a dictionary of project_id -> project_info
+    for projects that are currently 'Active'.
+    """
+    return {
+        pid: pinfo
+        for pid, pinfo in projects.items()
+        if pinfo["status"] == "Active"
+    }
+
+
+def list_active_projects(active_projects):
+    """
+    Displays a brief summary (ID and Name) of all active projects.
+    """
+    print("Here are the currently ACTIVE projects:")
+    for proj_id, info in active_projects.items():
+        print(f"  {proj_id} - {info['name']}")
+
+
+def get_project_id_from_user(active_projects):
+    """
+    Prompts the user to input a project ID from the active_projects dict,
+    or 'CANCEL' to abort.
+
+    Returns:
+      - A valid project_id (string) if chosen,
+      - None if the user typed 'CANCEL' or an invalid ID.
+    """
+    user_input = input("\nEnter the project ID to mark as completed (or 'CANCEL' to return): ").strip()
+    if user_input.upper() == "CANCEL":
+        return None
+
+    # Validate chosen ID
+    if user_input not in active_projects:
+        print("Invalid project ID or the project is not active.")
+        return None
+
+    return user_input
+
+
+def display_project_details(proj_id, project_info):
+    """
+    Prints detailed information for a single project.
+    """
+    print("\n--- Project Details ---")
+    print(f"  ID                   : {proj_id}")
+    print(f"  Name                 : {project_info['name']}")
+    print(f"  Budget               : {project_info['budget']}")
+    print(f"  Estimated Hours      : {project_info['estimated_hours']}")
+    print(f"  Assigned Freelancer  : {project_info['assigned_freelancer_id']}")
+    print(f"  Status               : {project_info['status']}")
+    print(f"  Actual Cost          : {project_info['actual_cost']}")
+
+def finalize_project_completion(proj_id):
+    """
+    1. Set project status to 'Completed'.
+    2. Set assigned freelancer's status to 'Available', assigned_project to None,
+       update total_earnings, and append project ID to completed_projects if not present.
+    3. Deduct the project's actual cost from the company's budget and allocated funds.
+    """
+    # 1) Mark project completed
+    projects[proj_id]["status"] = "Completed"
+
+    # 2) Update the assigned freelancer
+    assigned_freelancer_id = projects[proj_id]["assigned_freelancer_id"]
+    actual_cost = projects[proj_id]["actual_cost"]
+
+    freelancers[assigned_freelancer_id]["status"] = "Available"
+    freelancers[assigned_freelancer_id]["assigned_project"] = None
+    freelancers[assigned_freelancer_id]["total_earnings"] += actual_cost
+
+    if proj_id not in freelancers[assigned_freelancer_id]["completed_projects"]:
+        freelancers[assigned_freelancer_id]["completed_projects"].append(proj_id)
+
+    # 3) Deduct from company budget and allocated funds
+    company_budget["total_budget"] -= actual_cost
+    company_budget["total_allocated_funds"] -= actual_cost
 
 def cancel_project():
     print("\n[Cancel Project] - Feature under development.")
