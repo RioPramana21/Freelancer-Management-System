@@ -272,6 +272,20 @@ def get_confirmation(prompt="Confirm? (Y/N): "):
             return confirm == "Y"
         print("Invalid input. Please enter Y or N.")
 
+def display_freelancer_summaries():
+    """
+    Displays a concise summary of all freelancers.
+    Shows their ID, Name, Hourly Rate, and Assigned Project if any.
+    """
+    if not freelancers:
+        print("No freelancers found.")
+        return
+
+    print("\nList of Freelancers (Summary):")
+    for fid, fdata in freelancers.items():
+        assigned = str(fdata["assigned_project"])
+        print(f"- ID: {fid}, Name: {fdata['name']}, Rate: ${fdata['hourly_rate']}/hr, Assigned: {assigned}")
+
 def display_freelancer_details(freelancer_id):
     """Display detailed information for a freelancer."""
     if freelancer_id not in freelancers:
@@ -548,49 +562,32 @@ def hire_new_freelancer():
 
 def review_freelancer_profiles():
     """
-    Displays a list of all freelancer profiles.
-    Allows the admin to select a specific ID to view full details.
-    Returns to main menu when canceled.
+    Presents a menu to review freelancer profiles
     """
     print("\n=== Review Freelancer Profiles ===")
 
-    # Check if there are no freelancers
+    # Show a summary of all freelancers
+    display_freelancer_summaries()
+
+    # If no freelancers exist, nothing more to do
     if not freelancers:
-        print("No freelancers found.")
         return
 
-    # Display a summary of all freelancers
-    print("\nList of Freelancers (Summary):")
-    for fid, fdata in freelancers.items():
-        assigned = fdata["assigned_project"] if fdata["assigned_project"] else "None"
-        print(f"- ID: {fid}, Name: {fdata['name']}, Rate: ${fdata['hourly_rate']}/hr, Assigned: {assigned}")
-
-    # Prompt user to view details of a specific freelancer
     while True:
         print("\nEnter a Freelancer ID to view details, or type 'CANCEL' to return.")
-        menu = input("Your menu: ").strip()
-        if not menu:
+        choice = input("Your choice: ").strip()
+
+        if not choice:
             print("Please enter a valid ID or 'CANCEL'.")
             continue
-        if menu.upper() == "CANCEL":
-            print("Returning to main menu.")
+        
+        if choice.upper() == "CANCEL":
+            print("Returning to previous menu...")
             return
-        if menu in freelancers:
-            f = freelancers[menu]
-            print("\n=== Freelancer Detailed Profile ===")
-            print(f"ID: {menu}")
-            print(f"Name: {f['name']}")
-            print(f"Age: {f['age']}")
-            print(f"Gender: {f['gender']}")
-            print(f"Location: {f['location']}")
-            print(f"Skills: {', '.join(f['skills'])}")
-            print(f"Hourly Rate: ${f['hourly_rate']}/hr")
-            assigned_project = f["assigned_project"] if f["assigned_project"] else "None"
-            print(f"Assigned Project: {assigned_project}")
-            completed = f['completed_projects'] if f['completed_projects'] else ["None"]
-            completed_str = ", ".join(completed)
-            print(f"Completed Projects: {completed_str}")
-            print(f"Total Earnings: ${f['total_earnings']}")
+
+        # Check if the ID is valid
+        if choice in freelancers:
+            display_freelancer_details(choice)
         else:
             print("Invalid ID. Please enter a valid freelancer ID or 'CANCEL'.")
 
