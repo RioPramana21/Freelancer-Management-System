@@ -800,7 +800,7 @@ def find_eligible_freelancers(budget, est_hours):
             eligible[fid] = fdata
     return eligible
 
-def prompt_project_id_for_completion(active_projects):
+def prompt_active_project_id(active_projects):
     """
     Prompts the user to input a project ID from the active_projects dictionary,
     or 'CANCEL' to abort.
@@ -1646,7 +1646,7 @@ def mark_project_completed():
     display_project_table(active_projects, "ACTIVE PROJECTS")
 
     # 3) Prompt user for project ID
-    project_id = prompt_project_id_for_completion(active_projects)
+    project_id = prompt_active_project_id(active_projects)
     if project_id is None: return
 
     # 4) Display project details before confirmation
@@ -1670,91 +1670,59 @@ def mark_project_completed():
 
 def cancel_project():
     """
-    Cancels a currently active project by deleting it from the database,
-    freeing allocated funds, and making the assigned freelancer available.
-    """
-    print("\n=== Cancel a Project ===")
+    Cancels an active project, freeing allocated funds and making the assigned freelancer available.
 
-    # Get all active projects
-    active_projects = get_active_projects()
+    Steps:
+      1. Lists all active projects.
+      2. Prompts the user for a project ID or an option to cancel.
+      3. Displays project details for confirmation.
+      4. Frees up allocated funds.
+      5. Marks the assigned freelancer as available.
+      6. Deletes the project from the database.
+      7. Prints a confirmation message.
+    """
+
+    print("\n" + "=" * 50)
+    print("     ❌ CANCEL A PROJECT     ")
+    print("=" * 50)
+
+    # 1) Get all active projects
+    active_projects = {pid: pdata for pid, pdata in projects.items() if pdata["status"] == "Active"}
     if not active_projects:
-        print("No active projects found. Nothing to cancel.")
+        print("⚠️ No active projects found. Nothing to cancel.")
         return
 
-    # Display active projects briefly
-    print("Active Projects:")
-    list_active_projects(active_projects)
+    # 2) Display active projects for reference
+    display_project_table(active_projects, "ACTIVE PROJECTS")
 
-    # Prompt for project ID
-    proj_id = input("\nEnter the project ID to cancel (or 'CANCEL' to abort): ").strip()
-    if proj_id.upper() == "CANCEL":
-        print("Canceled.")
+    # 3) Prompt user for project ID
+    project_id = prompt_active_project_id(active_projects)
+    if not project_id: return
+
+    # 4) Display project details before confirmation
+    display_project_details(project_id)
+
+    if not get_confirmation("\n⚠️ Confirm cancellation of this project? (Y/N): "):
+        print("❌ Operation canceled.")
         return
 
-    if proj_id not in active_projects:
-        print("Invalid project ID.")
-        return
+    # 5) Free the assigned freelancer
+    assigned_freelancer = projects[project_id].get("assigned_freelancer_id")
+    if assigned_freelancer and assigned_freelancer in freelancers:
+        freelancers[assigned_freelancer]["status"] = "Available"
+        freelancers[assigned_freelancer]["assigned_project"] = None
 
-    # Show project details for confirmation
-    display_project_details(proj_id, projects[proj_id])
+    # 6) Free allocated funds
+    allocated_funds = projects[project_id]["actual_cost"]
+    company_budget["total_allocated_funds"] -= allocated_funds
 
-    # Confirm
-    if not get_confirmation("\nConfirm cancellation? (Y/N): "):
-        print("Canceled.")
-        return
+    # 7) Remove the project
+    del projects[project_id]
 
-    # Free the assigned freelancer
-    assigned = projects[proj_id]["assigned_freelancer_id"]
-    if assigned in freelancers:
-        freelancers[assigned]["status"] = "Available"
-        freelancers[assigned]["assigned_project"] = None
-
-    # Free allocated funds
-    allocated = projects[proj_id]["actual_cost"]
-    company_budget["total_allocated_funds"] -= allocated
-
-    # Remove the project completely
-    del projects[proj_id]
-
-    print(f"\nProject '{proj_id}' canceled and removed. Freelancer '{assigned}' is now available.")
-    print(f"Allocated funds of ${allocated} freed up.")
-
-def get_projects_data():
-    """
-    Gathers project data from the global 'projects' dictionary and
-    returns it as a list of dicts for easier manipulation.
-    """
-    data = []
-    for project_id, info in projects.items():
-        data.append({
-            "id": project_id,
-            "name": info.get("name", "N/A"),
-            "budget": info.get("budget", 0),
-            "estimated_hours": info.get("estimated_hours", 0),
-            "assigned_freelancer_id": info.get("assigned_freelancer_id", "N/A"),
-            "status": info.get("status", "N/A")
-        })
-    return data
-
-
-def print_projects_report(projects_list):
-    """
-    Prints a formatted report of the given list of projects.
-    If the list is empty, prints a 'No projects found' message.
-    """
-    if not projects_list:
-        print("No projects found.")
-        return
-
-    for proj in projects_list:
-        print(f"  Project ID           : {proj['id']}")
-        print(f"  Name                 : {proj['name']}")
-        print(f"  Budget               : {proj['budget']}")
-        print(f"  Estimated Hours      : {proj['estimated_hours']}")
-        print(f"  Assigned Freelancer  : {proj['assigned_freelancer_id']}")
-        print(f"  Status               : {proj['status']}")
-        print("-" * 40)
-
+    # 8) Print success message
+    print(f"\n✅ Project '{project_id}' has been CANCELED and removed.")
+    print(f"👤 Freelancer '{assigned_freelancer}' is now AVAILABLE.")
+    print(f"💰 ${allocated_funds:.2f} in allocated funds has been freed up.")
 
 def budget_management_main_menu():
     while True:
