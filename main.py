@@ -445,20 +445,36 @@ def app_main_menu():
         else:
             print("⚠️  Invalid selection! Please enter a number between 1 and 4.")
             
-# Placeholder Functions for Sub-Menus
+# ================================================= FREELANCER MANAGEMENT MODULE =========================================================
 def freelancer_management_main_menu():
+    """
+    Displays the Freelancer Management Menu and handles user selection.
+
+    Flow:
+    1. Show the menu with available options.
+    2. Get user input and ensure it’s valid.
+    3. Call the corresponding function based on user selection.
+    4. Loop until the user chooses to return to the main menu.
+    """
+
     while True:
-        print("\n=== Freelancer Management ===")
-        print("1. Hire New Freelancer")
-        print("2. Review Freelancer Profiles")
-        print("3. Search Freelancer")
-        print("4. Update Freelancer Information")
-        print("5. Fire Freelancer")
-        print("6. View Freelancers Performance Report")
-        print("7. Return to Main Menu")
-        
-        menu = input("Enter your menu (1-7): ").strip()
-        
+        # Display menu header
+        print("\n" + "=" * 40)
+        print("    🛠️  FREELANCER MANAGEMENT MENU 🛠️    ")
+        print("=" * 40)
+        print("1️⃣  Hire New Freelancer")
+        print("2️⃣  Review Freelancer Profiles")
+        print("3️⃣  Search Freelancer")
+        print("4️⃣  Update Freelancer Information")
+        print("5️⃣  Fire Freelancer")
+        print("6️⃣  View Freelancers Performance Report")
+        print("7️⃣  🔙 Return to Main Menu")
+        print("-" * 40)
+
+        # Get user input
+        menu = input("📌 Select an option (1-7): ").strip()
+
+        # Handle user choice
         if menu == "1":
             hire_new_freelancer()
         elif menu == "2":
@@ -472,9 +488,11 @@ def freelancer_management_main_menu():
         elif menu == "6":
             view_freelancers_performance_report()
         elif menu == "7":
+            print("\n🔙 Returning to Main Menu...\n")
             return
         else:
-            print("Invalid input. Please enter a number between 1 and 7.")
+            print("⚠️  Invalid input! Please enter a number between 1 and 7.")
+
 
 # Placeholder functions for Freelancer Management Features
 def hire_new_freelancer():
