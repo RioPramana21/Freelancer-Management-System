@@ -386,36 +386,20 @@ def initialize_id_counter(collection, counter_key, prefix_len):
     else:
         app_state[counter_key] = max(int(key[prefix_len:]) for key in collection.keys()) + 1
 
-def display_freelancer_table(filter_type="all"):
+def display_freelancer_table(filtered_freelancers, title="FREELANCERS"):
     """
-    Displays a table of freelancers based on the selected filter type:
-    - "all": Shows all freelancers (sorted by ID).
-    - "available": Shows only freelancers who are not assigned to a project.
-    - "assigned": Shows only freelancers who are currently working on a project.
-    
-    Returns a dict of the filtered freelancers for further checks.
+    Displays a table of freelancers.
+
+    Parameters:
+        filtered_freelancers (dict): A dictionary of freelancers to display.
+        title (str): A title to be shown on top of the table.
     """
-    if not freelancers:
-        print("No freelancers found.")
-        return
-
-    # Filter freelancers based on selection
-    if filter_type == "available":
-        filtered_freelancers = {fid: fdata for fid, fdata in freelancers.items() if fdata["assigned_project"] is None}
-        title = "AVAILABLE FREELANCERS"
-    elif filter_type == "assigned":
-        filtered_freelancers = {fid: fdata for fid, fdata in freelancers.items() if fdata["assigned_project"] is not None}
-        title = "ASSIGNED FREELANCERS"
-    else:
-        filtered_freelancers = freelancers  # Show all
-        title = "ALL FREELANCERS"
-
     if not filtered_freelancers:
         print(f"No {title.lower()} found.")
         return
 
     print("\n" + "=" * 150)
-    print(" " * 60 + f" {title} (Sorted by ID)         ")
+    print(" " * 70 + f"{title}")
     print("=" * 150)
     print(
         f"{'🆔 ID':<12}"
@@ -446,9 +430,6 @@ def display_freelancer_table(filter_type="all"):
         )
 
     print("=" * 150)
-    
-    # Return the dict so we know which freelancers were shown
-    return filtered_freelancers
 
 def display_freelancer_details(freelancer_id):
     """Displays detailed information for a freelancer."""
@@ -688,10 +669,10 @@ def hire_new_freelancer():
 
 def review_freelancer_profiles():
     """
-    Presents a menu to review freelancer profiles with 3 filtering options:
-    - All freelancers (sorted by ID)
-    - Available freelancers (without an active project)
-    - Assigned freelancers (currently working on a project)
+    Presents a menu to review freelancer profiles with three filtering options:
+      - All freelancers (sorted by ID)
+      - Available freelancers (not assigned to any project)
+      - Assigned freelancers (currently working on a project)
     """
     while True:
         print("\n=== 📄 REVIEW FREELANCER PROFILES ===")
@@ -704,36 +685,43 @@ def review_freelancer_profiles():
         menu_choice = input("📌 Select an option (1-4): ").strip()
 
         if menu_choice == "1":
-            filtered_freelancers = display_freelancer_table("all")
+            filtered_freelancers = freelancers  # Global dictionary of all freelancers
+            title = "ALL FREELANCERS"
         elif menu_choice == "2":
-            filtered_freelancers = display_freelancer_table("available")
+            filtered_freelancers = {
+                fid: fdata for fid, fdata in freelancers.items()
+                if fdata["assigned_project"] is None
+            }
+            title = "AVAILABLE FREELANCERS"
         elif menu_choice == "3":
-            filtered_freelancers = display_freelancer_table("assigned")
+            filtered_freelancers = {
+                fid: fdata for fid, fdata in freelancers.items()
+                if fdata["assigned_project"] is not None
+            }
+            title = "ASSIGNED FREELANCERS"
         elif menu_choice == "4":
             print("\n🔙 Returning to Freelancer Management Main Menu...\n")
             return
         else:
             print("⚠️ Invalid input! Please enter a number between 1 and 4.")
-            continue  # Skip the next steps and return to the menu
+            continue
 
-        # If no freelancers were displayed (filtered_freelancers is empty),
-        # skip the ID prompt loop.
+        # Display the table using the refactored function.
+        display_freelancer_table(filtered_freelancers, title)
+
+        # If nothing was displayed, skip further interaction.
         if not filtered_freelancers:
             continue
-        # Otherwise, allow detailed profile viewing
+
+        # Allow the user to view detailed profiles.
         while True:
             choice = input("\n🔍 Enter a Freelancer ID to view details, or type 'CANCEL' to return: ").strip().upper()
-
             if choice == "CANCEL":
-                break  # Return to filtering menu
-
-            # Only accept ID if it belongs to the currently displayed list
+                break  # Return to the filtering menu
             if choice in filtered_freelancers:
                 display_freelancer_details(choice)
             else:
                 print("⚠️  Invalid ID in current view. Please enter a valid ID or 'CANCEL'.")
-
-
 
 def search_freelancer():
     """
@@ -748,7 +736,6 @@ def search_freelancer():
     Typing 'CANCEL' at any prompt exits the search flow.
     """
     print("\n=== Search Freelancer ===")
-
     if not freelancers:
         print("No freelancers found. There is nothing to search.")
         return
@@ -764,7 +751,7 @@ def search_freelancer():
         menu = input("Enter your choice (1-4): ").strip()
 
         if menu == "1":
-            results = search_by_name()
+            results = search_by_keyword("name")
             if results is None:
                 print("Returning to previous menu...")
                 return
@@ -774,7 +761,7 @@ def search_freelancer():
                 if not handle_matched_freelancers(results):
                     return
         elif menu == "2":
-            results = search_by_skills()
+            results = search_by_keyword("skills")
             if results is None:
                 print("Returning to previous menu...")
                 return
@@ -791,35 +778,39 @@ def search_freelancer():
             print("Invalid input. Please enter a number between 1 and 4.")
 
 
-def search_by_name():
+def search_by_keyword(field):
     """
-    Prompts for a (partial) name and returns freelancer IDs whose names contain the keyword.
+    Prompts for a (partial) search keyword and returns freelancer IDs whose specified field
+    matches the keyword.
+
+    For 'name', performs a case-insensitive substring match.
+    For 'skills', checks if any skill contains the keyword (case-insensitive).
+
     Returns None if 'CANCEL' is entered, or a (possibly empty) list of IDs.
     """
-    keyword = input("\nEnter a (partial) name to search, or 'CANCEL' to exit: ").strip()
+    if field == "name":
+        prompt = "\nEnter a (partial) name to search, or 'CANCEL' to exit: "
+    elif field == "skills":
+        prompt = "\nEnter a (partial) skill to search, or 'CANCEL' to exit: "
+    else:
+        return []
+    
+    keyword = input(prompt).strip()
     if keyword.upper() == "CANCEL":
         return None
     if not keyword:
         return []
+    
     keyword_lower = keyword.lower()
-    return [fid for fid, fdata in freelancers.items() if keyword_lower in fdata["name"].lower()]
-
-
-def search_by_skills():
-    """
-    Prompts for a (partial) skill and returns freelancer IDs having at least one matching skill.
-    Returns None if 'CANCEL' is entered, or a (possibly empty) list of IDs.
-    """
-    keyword = input("\nEnter a (partial) skill to search, or 'CANCEL' to exit: ").strip()
-    if keyword.upper() == "CANCEL":
-        return None
-    if not keyword:
-        return []
-    keyword_lower = keyword.lower()
-    return [
-        fid for fid, fdata in freelancers.items()
-        if any(keyword_lower in skill.lower() for skill in fdata["skills"])
-    ]
+    results = []
+    for fid, fdata in freelancers.items():
+        if field == "name":
+            if keyword_lower in fdata["name"].lower():
+                results.append(fid)
+        elif field == "skills":
+            if any(keyword_lower in skill.lower() for skill in fdata["skills"]):
+                results.append(fid)
+    return results
 
 
 def search_by_id():
@@ -897,6 +888,7 @@ def handle_matched_freelancers(matched_ids):
             display_freelancer_details(selection)
         else:
             print("That ID is not in the matched list. Please try again.")
+
 
 
 def update_freelancer_info():
