@@ -271,40 +271,6 @@ def get_confirmation(prompt="Confirm? (Y/N): "):
             return confirm == "Y"
         print("Invalid input. Please enter Y or N.")
 
-def display_freelancer_summaries():
-    """
-    Displays a concise summary of all freelancers.
-    Shows their ID, Name, Hourly Rate, and Assigned Project if any.
-    """
-    if not freelancers:
-        print("No freelancers found.")
-        return
-
-    print("\nList of Freelancers (Summary):")
-    for fid, fdata in freelancers.items():
-        assigned = str(fdata["assigned_project"])
-        print(f"- ID: {fid}, Name: {fdata['name']}, Rate: ${fdata['hourly_rate']}/hr, Assigned: {assigned}")
-
-def display_freelancer_details(freelancer_id):
-    """Display detailed information for a freelancer."""
-    if freelancer_id not in freelancers:
-        print("Invalid freelancer ID.")
-        return
-
-    f = freelancers[freelancer_id]
-    print("\n=== Freelancer Detailed Profile ===")
-    print(f"ID: {freelancer_id}")
-    print(f"Name: {f['name']}")
-    print(f"Age: {f['age']}")
-    print(f"Gender: {f['gender']}")
-    print(f"Location: {f['location']}")
-    print(f"Skills: {', '.join(f['skills'])}")
-    print(f"Hourly Rate: ${f['hourly_rate']}/hr")
-    print(f"Assigned Project: {f['assigned_project'] or 'None'}")
-    completed_projects = f['completed_projects'] or ["None"]
-    print(f"Completed Projects: {', '.join(completed_projects)}")
-    print(f"Total Earnings: ${f['total_earnings']}")
-
 # ================ VALIDATION FUNCTIONS ================
 def validate_name(name):
     """
@@ -384,6 +350,23 @@ def validate_hourly_rate(rate):
         return False, "Hourly rate cannot be infinite."
     return True, ""
 
+def validate_updated_budget(new_budget, allocated_funds):
+    """
+    Ensures the budget is a valid number and above allocated funds.
+
+    Parameters:
+    - new_budget (float): The entered new budget value.
+    - allocated_funds (float): The current allocated funds.
+
+    Returns:
+    - (bool, str): Tuple containing validation status and error message (if any).
+    """
+    if new_budget <= 0:
+        return False, "Budget must be a positive number."
+    if new_budget < allocated_funds:
+        return False, f"Budget cannot be lower than allocated funds (${allocated_funds:.2f})."
+    return True, ""
+
 # ================================================= HELPER FUNCTIONS =========================================================
 def initialize_id_counter(collection, counter_key, prefix_len):
     """
@@ -403,23 +386,105 @@ def initialize_id_counter(collection, counter_key, prefix_len):
     else:
         app_state[counter_key] = max(int(key[prefix_len:]) for key in collection.keys()) + 1
 
-def validate_updated_budget(new_budget, allocated_funds):
+def display_freelancer_table(filter_type="all"):
     """
-    Ensures the budget is a valid number and above allocated funds.
-
-    Parameters:
-    - new_budget (float): The entered new budget value.
-    - allocated_funds (float): The current allocated funds.
-
-    Returns:
-    - (bool, str): Tuple containing validation status and error message (if any).
+    Displays a table of freelancers based on the selected filter type:
+    - "all": Shows all freelancers (sorted by ID).
+    - "available": Shows only freelancers who are not assigned to a project.
+    - "assigned": Shows only freelancers who are currently working on a project.
+    
+    Returns a dict of the filtered freelancers for further checks.
     """
-    if new_budget <= 0:
-        return False, "Budget must be a positive number."
-    if new_budget < allocated_funds:
-        return False, f"Budget cannot be lower than allocated funds (${allocated_funds:.2f})."
-    return True, ""
+    if not freelancers:
+        print("No freelancers found.")
+        return
 
+    # Filter freelancers based on selection
+    if filter_type == "available":
+        filtered_freelancers = {fid: fdata for fid, fdata in freelancers.items() if fdata["assigned_project"] is None}
+        title = "AVAILABLE FREELANCERS"
+    elif filter_type == "assigned":
+        filtered_freelancers = {fid: fdata for fid, fdata in freelancers.items() if fdata["assigned_project"] is not None}
+        title = "ASSIGNED FREELANCERS"
+    else:
+        filtered_freelancers = freelancers  # Show all
+        title = "ALL FREELANCERS"
+
+    if not filtered_freelancers:
+        print(f"No {title.lower()} found.")
+        return
+
+    print("\n" + "=" * 150)
+    print(" " * 60 + f" {title} (Sorted by ID)         ")
+    print("=" * 150)
+    print(
+        f"{'🆔 ID':<12}"
+        f"{'👤 Name':<25}"
+        f"{'🎂 Age':<8}"
+        f"{'⚧ Gender':<10}"
+        f"{'📍 Location':<20}"
+        f"{'🛠 Skills':<40}"
+        f"{'💰 Rate':<10}"
+        f"{'📌 Status':<10}"
+    )
+    print("-" * 150)
+
+    for fid in sorted(filtered_freelancers.keys()):
+        f = filtered_freelancers[fid]
+        skills_display = ", ".join(f["skills"]) if f["skills"] else "None"
+        status = "Assigned" if f["assigned_project"] else "Available"
+        
+        print(
+            f"{fid:<12}"
+            f"{f['name']:<30}"
+            f"{str(f['age']):<6}"
+            f"{f['gender']:<12}"
+            f"{f['location']:<20}"
+            f"{skills_display:<40}"
+            f"${f['hourly_rate']:<9.2f}"
+            f"{status:<10}"
+        )
+
+    print("=" * 150)
+    
+    # Return the dict so we know which freelancers were shown
+    return filtered_freelancers
+
+def display_freelancer_details(freelancer_id):
+    """Displays detailed information for a freelancer."""
+    if freelancer_id not in freelancers:
+        print("⚠️ Invalid freelancer ID.")
+        return
+
+    f = freelancers[freelancer_id]
+    # Determine status based on whether or not there's an assigned project
+    status = "Assigned" if f["assigned_project"] else "Available"
+    
+    print("\n" + "=" * 60)
+    print("         📄 FREELANCER DETAILED PROFILE         ")
+    print("=" * 60)
+
+    print(f"{'🆔 ID':<20}: {freelancer_id}")
+    print(f"{'👤 Name':<20}: {f['name']}")
+    print(f"{'🎂 Age':<20}: {f['age']}")
+    print(f"{'⚧ Gender':<21}: {f['gender']}")
+    print(f"{'📍 Location':<20}: {f['location']}")
+    print(f"{'📌 Status':<20}: {status}")
+
+    skills_str = ", ".join(f["skills"]) if f["skills"] else "None"
+    print(f"{'🛠 Skills':<21}: {skills_str}")
+    
+    print(f"{'💰 Hourly Rate':<20}: ${f['hourly_rate']:.2f}/hr")
+    print(f"{'📌 Assigned Project':<20}: {f['assigned_project'] or 'None'}")
+    
+    # Handle Completed Projects
+    completed_projects = f["completed_projects"] or []
+    if not completed_projects:
+        completed_projects = ["None"]
+    print(f"{'✅ Completed Projects':<20}: {', '.join(completed_projects)}")
+    
+    print(f"{'💵 Total Earnings':<20}: ${f['total_earnings']:.2f}")
+    print("=" * 60)
 
 # ================================================= MAIN PROGRAM =========================================================
 
@@ -623,34 +688,51 @@ def hire_new_freelancer():
 
 def review_freelancer_profiles():
     """
-    Presents a menu to review freelancer profiles
+    Presents a menu to review freelancer profiles with 3 filtering options:
+    - All freelancers (sorted by ID)
+    - Available freelancers (without an active project)
+    - Assigned freelancers (currently working on a project)
     """
-    print("\n=== Review Freelancer Profiles ===")
-
-    # Show a summary of all freelancers
-    display_freelancer_summaries()
-
-    # If no freelancers exist, nothing more to do
-    if not freelancers:
-        return
-
     while True:
-        print("\nEnter a Freelancer ID to view details, or type 'CANCEL' to return.")
-        choice = input("Your choice: ").strip()
+        print("\n=== 📄 REVIEW FREELANCER PROFILES ===")
+        print("1️⃣  View All Freelancers")
+        print("2️⃣  View Available Freelancers")
+        print("3️⃣  View Assigned Freelancers")
+        print("4️⃣  🔙 Return to Freelancer Management Main Menu")
+        print("-" * 40)
 
-        if not choice:
-            print("Please enter a valid ID or 'CANCEL'.")
-            continue
-        
-        if choice.upper() == "CANCEL":
-            print("Returning to previous menu...")
+        menu_choice = input("📌 Select an option (1-4): ").strip()
+
+        if menu_choice == "1":
+            filtered_freelancers = display_freelancer_table("all")
+        elif menu_choice == "2":
+            filtered_freelancers = display_freelancer_table("available")
+        elif menu_choice == "3":
+            filtered_freelancers = display_freelancer_table("assigned")
+        elif menu_choice == "4":
+            print("\n🔙 Returning to Freelancer Management Main Menu...\n")
             return
-
-        # Check if the ID is valid
-        if choice in freelancers:
-            display_freelancer_details(choice)
         else:
-            print("Invalid ID. Please enter a valid freelancer ID or 'CANCEL'.")
+            print("⚠️ Invalid input! Please enter a number between 1 and 4.")
+            continue  # Skip the next steps and return to the menu
+
+        # If no freelancers were displayed (filtered_freelancers is empty),
+        # skip the ID prompt loop.
+        if not filtered_freelancers:
+            continue
+        # Otherwise, allow detailed profile viewing
+        while True:
+            choice = input("\n🔍 Enter a Freelancer ID to view details, or type 'CANCEL' to return: ").strip().upper()
+
+            if choice == "CANCEL":
+                break  # Return to filtering menu
+
+            # Only accept ID if it belongs to the currently displayed list
+            if choice in filtered_freelancers:
+                display_freelancer_details(choice)
+            else:
+                print("⚠️  Invalid ID in current view. Please enter a valid ID or 'CANCEL'.")
+
 
 
 def search_freelancer():
