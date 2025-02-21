@@ -1181,10 +1181,15 @@ def assign_freelancer_to_project():
         return
 
     # 6) Confirmation
+    # Compute actual_cost at creation time using the chosen freelancer's current rate.
+    freelancer_rate = freelancers[chosen_fid]["hourly_rate"]
+    actual_cost = freelancer_rate * estimated_hours
+    
     print("\n=== Confirm New Project ===")
     print(f"Project Name: {project_name}")
     print(f"Budget: {project_budget}")
     print(f"Estimated Hours: {estimated_hours}")
+    print(f"Calculated Actual Cost: {actual_cost}")
     print(f"Freelancer Chosen: {chosen_fid} - {freelancers[chosen_fid]['name']}")
     if not get_confirmation("Confirm project creation? (Y/N): "):
         print("Canceled.")
@@ -1200,10 +1205,10 @@ def assign_freelancer_to_project():
         "estimated_hours": estimated_hours,
         "status": "Active",
         "assigned_freelancer_id": chosen_fid,
-        "actual_cost": 0.0
+        "actual_cost": actual_cost
     }
-    # FIX: Update allocated funds by adding the project's actual cost.
-    # company_budget["total_allocated_funds"] += actual_cost
+    # Update allocated funds using the precomputed actual_cost.
+    company_budget["total_allocated_funds"] += actual_cost
 
     # Mark freelancer as assigned
     freelancers[chosen_fid]["status"] = "Assigned"
