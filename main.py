@@ -678,6 +678,90 @@ def display_performance_report(performance_data, total_earnings_sum, title="FREE
     print(f"Overall Total Earnings: ${total_earnings_sum:.2f}")
     print(f"Average Earnings per Freelancer: ${avg_earnings:.2f}")
 
+# Project Management Module
+def display_project_table(filtered_projects, title="PROJECTS"):
+    """
+    Displays a table of projects.
+
+    Parameters:
+        filtered_projects (dict): A dictionary of projects to display.
+        title (str): A title to be shown on top of the table.
+    """
+    if not filtered_projects:
+        print(f"No {title.lower()} found.")
+        return
+
+    print("\n" + "=" * 120)
+    print(" " * 50 + f"{title}")
+    print("=" * 120)
+    print(
+        f"{'🆔 ID':<10}"
+        f"{'📌 Name':<30}"
+        f"{'💰 Budget':<12}"
+        f"{'🕒 Est. Hours':<12}"
+        f"{'👤 Freelancer':<15}"
+        f"{'📊 Status':<15}"
+    )
+    print("-" * 120)
+
+    for pid in sorted(filtered_projects.keys()):
+        p = filtered_projects[pid]
+        freelancer = p["assigned_freelancer_id"] or "None"
+        
+        print(
+            f"{pid:<10}"
+            f"{p['name']:<30}"
+            f"${p['budget']:<10.2f}"
+            f"{p['estimated_hours']:<12}"
+            f"{freelancer:<15}"
+            f"{p['status']:<15}"
+        )
+
+    print("=" * 120)
+
+def display_project_details(project_id):
+    """Displays detailed information for a project."""
+    if project_id not in projects:
+        print("⚠️ Invalid project ID.")
+        return
+
+    p = projects[project_id]
+    
+    print("\n" + "=" * 60)
+    print("         📄 PROJECT DETAILED PROFILE         ")
+    print("=" * 60)
+
+    print(f"{'🆔 ID':<20}: {project_id}")
+    print(f"{'📌 Name':<20}: {p['name']}")
+    print(f"{'💰 Budget':<20}: ${p['budget']:.2f}")
+    print(f"{'🕒 Estimated Hours':<20}: {p['estimated_hours']}")
+    print(f"{'👤 Assigned Freelancer':<20}: {p['assigned_freelancer_id'] or 'None'}")
+    print(f"{'📊 Status':<20}: {p['status']}")
+    print(f"{'💰 Actual Cost':<20}: ${p['actual_cost']:.2f}")
+    print("=" * 60)
+
+def prompt_for_project_detail(filtered_projects):
+    """
+    Prompts the user to enter a Project ID from the provided dictionary
+    to view detailed information. Repeats until the user types 'CANCEL'.
+    
+    Parameters:
+        filtered_projects (dict): A dictionary of project data.
+    """
+    while True:
+        pid = get_valid_input(
+            prompt="\n🔍 Enter a Project ID to view details, or type 'CANCEL' to return: ",
+            validation_func=validate_id,
+            allow_cancel=True,
+            conversion_func=lambda x: x.strip().upper()
+        )
+        if pid is None:
+            break
+        if pid in filtered_projects:
+            display_project_details(pid)
+        else:
+            print("⚠️  Invalid ID in current view. Please enter a valid ID or 'CANCEL'.")
+
 # ================================================= MAIN PROGRAM =========================================================
 
 def app_main_menu():
@@ -1234,20 +1318,20 @@ def view_freelancers_performance_report():
 def project_management_main_menu():
     while True:
         print("\n=== Project Management ===")
-        print("1. Assign Freelancer to Project")
-        print("2. Mark Project as Completed")
-        print("3. Review Projects")
+        print("1. Review Projects")
+        print("2. Assign Freelancer to Project")
+        print("3. Mark Project as Completed")
         print("4. Cancel Project")
         print("5. Return to Main Menu")
         
         menu = input("Enter your menu (1-5): ").strip()
         
         if menu == "1":
-            assign_freelancer_to_project()
-        elif menu == "2":
-            mark_project_completed()
-        elif menu == "3":
             review_projects()
+        elif menu == "2":
+            assign_freelancer_to_project()
+        elif menu == "3":
+            mark_project_completed()
         elif menu == "4":
             cancel_project()
         elif menu == "5":
@@ -1255,7 +1339,48 @@ def project_management_main_menu():
         else:
             print("Invalid input. Please enter a number between 1 and 5.")
 
-# Placeholder functions for Project Management Features
+def review_projects():
+    """
+    Presents a menu to review projects with three filtering options:
+      - All projects (sorted by ID)
+      - Active projects (currently in progress)
+      - Completed projects (finished projects)
+    
+    Allows the admin to view project details by entering a Project ID.
+    """
+
+    while True:
+        print("\n=== 📄 REVIEW PROJECTS ===")
+        print("1️⃣  View All Projects")
+        print("2️⃣  View Active Projects")
+        print("3️⃣  View Completed Projects")
+        print("4️⃣  🔙 Return to Project Management Main Menu")
+        print("-" * 40)
+
+        menu_choice = input("📌 Select an option (1-4): ").strip()
+
+        if menu_choice == "1":
+            filtered_projects = projects  # All projects
+            title = "ALL PROJECTS"
+        elif menu_choice == "2":
+            filtered_projects = {pid: pdata for pid, pdata in projects.items() if pdata["status"] == "Active"}
+            title = "ACTIVE PROJECTS"
+        elif menu_choice == "3":
+            filtered_projects = {pid: pdata for pid, pdata in projects.items() if pdata["status"] == "Completed"}
+            title = "COMPLETED PROJECTS"
+        elif menu_choice == "4":
+            print("\n🔙 Returning to Project Management Main Menu...\n")
+            return
+        else:
+            print("⚠️ Invalid input! Please enter a number between 1 and 4.")
+            continue
+
+        display_project_table(filtered_projects, title)
+        if not filtered_projects:
+            continue
+
+        prompt_for_project_detail(filtered_projects)
+
 def assign_freelancer_to_project():
     """
     Creates a new project and assigns a suitable freelancer.
@@ -1505,20 +1630,6 @@ def get_project_id_from_user(active_projects):
 
     return user_input
 
-
-def display_project_details(proj_id, project_info):
-    """
-    Prints detailed information for a single project.
-    """
-    print("\n--- Project Details ---")
-    print(f"  ID                   : {proj_id}")
-    print(f"  Name                 : {project_info['name']}")
-    print(f"  Budget               : {project_info['budget']}")
-    print(f"  Estimated Hours      : {project_info['estimated_hours']}")
-    print(f"  Assigned Freelancer  : {project_info['assigned_freelancer_id']}")
-    print(f"  Status               : {project_info['status']}")
-    print(f"  Actual Cost          : {project_info['actual_cost']}")
-
 def finalize_project_completion(proj_id):
     """
     1. Set project status to 'Completed'.
@@ -1594,61 +1705,6 @@ def cancel_project():
 
     print(f"\nProject '{proj_id}' canceled and removed. Freelancer '{assigned}' is now available.")
     print(f"Allocated funds of ${allocated} freed up.")
-
-
-def review_projects():
-    """
-    Displays a menu to review existing projects in different ways.
-
-    Options:
-      1. All Projects
-      2. Active Projects
-      3. Completed Projects
-      4. Return to previous menu
-
-    The function filters project data based on the user's choice and displays it
-    in a readable format.
-    """
-    print("\n=== Review Projects ===")
-    
-    if not projects:
-        print("No projects found in the system.")
-        return
-
-    menu = "0"
-    while menu != "4":
-        print("\nHow would you like to view the projects?")
-        print("1. All Projects")
-        print("2. Active Projects")
-        print("3. Completed Projects")
-        print("4. Return to previous menu")
-
-        menu = input("Enter your choice (1-4): ").strip()
-
-        if menu == "4":
-            print("Returning to previous menu...")
-            return
-
-        # Collect all projects into a list of dicts
-        projects_data = get_projects_data()
-
-        # Filter the list based on the user's choice
-        if menu == "1":
-            filtered_data = projects_data  # No filter => Show all
-            print("\n=== All Projects ===")
-        elif menu == "2":
-            filtered_data = [p for p in projects_data if p["status"] == "Active"]
-            print("\n=== Active Projects ===")
-        elif menu == "3":
-            filtered_data = [p for p in projects_data if p["status"] == "Completed"]
-            print("\n=== Completed Projects ===")
-        else:
-            print("Invalid input. Please enter a number between 1 and 4.")
-            continue
-
-        # Display the final list of projects
-        print_projects_report(filtered_data)
-
 
 def get_projects_data():
     """
