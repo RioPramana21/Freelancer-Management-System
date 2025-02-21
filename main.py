@@ -1,5 +1,3 @@
-import sys
-
 freelancers = {
     "FR001": {
         "name": "Alice Johnson",
@@ -379,30 +377,45 @@ def validate_hourly_rate(rate: float):
         return False, "Hourly rate must be greater than zero."
     return True, ""
 
-def get_next_freelancer_id():
-    if not freelancers:
-        app_state["freelancer_id_counter"] = 1
-    else:
-        app_state["freelancer_id_counter"] = max(int(fid[2:]) for fid in freelancers.keys()) + 1
+# ================================================= HELPER FUNCTIONS =========================================================
+def initialize_id_counter(collection, counter_key, prefix_len):
+    """
+    Initializes the next available ID counter for a given collection.
+    This runs at the start of the program only.
 
-def get_next_project_id():
-    if not projects:
-        app_state["project_id_counter"] = 1
+    Parameters:
+    - collection (dict): The dictionary storing the items (freelancers/projects).
+    - counter_key (str): The key in `app_state` to store the counter (e.g., 'freelancer_id_counter').
+    - prefix_len (int): The length of the prefix to remove from the ID before converting to an integer.
+
+    Returns:
+    - None: Updates `app_state` in place.
+    """
+    if not collection:
+        app_state[counter_key] = 1  # Start from 1 if the collection is empty
     else:
-        app_state["project_id_counter"] = max(int(pid[1:]) for pid in projects.keys()) + 1
+        app_state[counter_key] = max(int(key[prefix_len:]) for key in collection.keys()) + 1
+
+
+
+# ================================================= MAIN PROGRAM =========================================================
 
 def app_main_menu():
-    get_next_freelancer_id()
-    get_next_project_id()
+    initialize_id_counter(freelancers, "freelancer_id_counter", 2)  # Example ID = FR101
+    initialize_id_counter(projects, "project_id_counter", 1)  # Example ID = P1001
+    
     menu = "0"
     while menu != "4":
-        print("\n=== Freelancer Management System ===")
-        print("1. Freelancer Management")
-        print("2. Project Management")
-        print("3. Budget Management")
-        print("4. Exit")
+        print("\n" + "=" * 40)
+        print("    🎯 FREELANCER MANAGEMENT SYSTEM 🎯    ")
+        print("=" * 40)
+        print("1️⃣  Manage Freelancers")
+        print("2️⃣  Manage Projects")
+        print("3️⃣  Manage Budget")
+        print("4️⃣  Exit")
+        print("-" * 40)
         
-        menu = input("Enter your menu (1-4): ").strip()
+        menu = input("📌 Select an option (1-4): ").strip()
         
         if menu == "1":
             freelancer_management_main_menu()
@@ -411,10 +424,10 @@ def app_main_menu():
         elif menu == "3":
             budget_management_main_menu()
         elif menu == "4":
-            print("Thank you for using Freelancer Management System. Goodbye!")
-            sys.exit()
+            print("\n📢 Exiting... Thank you for using the Freelancer Management System! 🚀")
+            print("👋 See you next time!\n")
         else:
-            print("Invalid input. Please enter a number between 1 and 4.")
+            print("⚠️  Invalid selection! Please enter a number between 1 and 4.")
             
 # Placeholder Functions for Sub-Menus
 def freelancer_management_main_menu():
