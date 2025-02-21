@@ -367,6 +367,17 @@ def validate_updated_budget(new_budget, allocated_funds):
         return False, f"Budget cannot be lower than allocated funds (${allocated_funds:.2f})."
     return True, ""
 
+def validate_id(id):
+    """
+    Validates that the id input is not empty after stripping whitespace.
+
+    Returns:
+        (bool, str): Tuple indicating validation status and error message (if any).
+    """
+    if not id:
+        return False, "❌ Error: Input cannot be empty. Please enter a valid ID."
+    return True, ""
+
 # ================================================= HELPER FUNCTIONS =========================================================
 def initialize_id_counter(collection, counter_key, prefix_len):
     """
@@ -466,6 +477,24 @@ def display_freelancer_details(freelancer_id):
     
     print(f"{'💵 Total Earnings':<20}: ${f['total_earnings']:.2f}")
     print("=" * 60)
+
+def prompt_for_freelancer_detail(filtered_freelancers):
+    """
+    Prompts the user to enter a Freelancer ID from the provided dictionary
+    to view detailed information. Repeats until the user types 'CANCEL'.
+    
+    Parameters:
+        filtered_freelancers (dict): A dictionary of freelancer data.
+    """
+    while True:
+        choice = input("\n🔍 Enter a Freelancer ID to view details, or type 'CANCEL' to return: ").strip().upper()
+        if choice == "CANCEL":
+            break
+        if choice in filtered_freelancers:
+            display_freelancer_details(choice)
+        else:
+            print("⚠️  Invalid ID in current view. Please enter a valid ID or 'CANCEL'.")
+
 
 # ================================================= MAIN PROGRAM =========================================================
 
@@ -685,19 +714,13 @@ def review_freelancer_profiles():
         menu_choice = input("📌 Select an option (1-4): ").strip()
 
         if menu_choice == "1":
-            filtered_freelancers = freelancers  # Global dictionary of all freelancers
+            filtered_freelancers = freelancers  # All freelancers
             title = "ALL FREELANCERS"
         elif menu_choice == "2":
-            filtered_freelancers = {
-                fid: fdata for fid, fdata in freelancers.items()
-                if fdata["assigned_project"] is None
-            }
+            filtered_freelancers = {fid: fdata for fid, fdata in freelancers.items() if fdata["assigned_project"] is None}
             title = "AVAILABLE FREELANCERS"
         elif menu_choice == "3":
-            filtered_freelancers = {
-                fid: fdata for fid, fdata in freelancers.items()
-                if fdata["assigned_project"] is not None
-            }
+            filtered_freelancers = {fid: fdata for fid, fdata in freelancers.items() if fdata["assigned_project"] is not None}
             title = "ASSIGNED FREELANCERS"
         elif menu_choice == "4":
             print("\n🔙 Returning to Freelancer Management Main Menu...\n")
@@ -706,112 +729,130 @@ def review_freelancer_profiles():
             print("⚠️ Invalid input! Please enter a number between 1 and 4.")
             continue
 
-        # Display the table using the refactored function.
         display_freelancer_table(filtered_freelancers, title)
-
-        # If nothing was displayed, skip further interaction.
         if not filtered_freelancers:
             continue
 
-        # Allow the user to view detailed profiles.
-        while True:
-            choice = input("\n🔍 Enter a Freelancer ID to view details, or type 'CANCEL' to return: ").strip().upper()
-            if choice == "CANCEL":
-                break  # Return to the filtering menu
-            if choice in filtered_freelancers:
-                display_freelancer_details(choice)
-            else:
-                print("⚠️  Invalid ID in current view. Please enter a valid ID or 'CANCEL'.")
+        prompt_for_freelancer_detail(filtered_freelancers)
+
 
 def search_freelancer():
     """
-    Provides an internal submenu for searching freelancers:
-      1) By Name (partial, case-insensitive)
-      2) By Skills (partial, case-insensitive)
-      3) By ID (exact) – fully managed in search_by_id()
-      4) Return to previous menu
+    Provides an internal submenu for searching freelancers by:
+      1) Name (partial match, case-insensitive).
+      2) Skills (partial match, case-insensitive).
+      3) ID (exact match via `search_by_id()`).
+      4) Returning to the previous menu.
 
-    For Name and Skills searches, if matches are found, they are passed to 
-    handle_matched_freelancers for further action.
-    Typing 'CANCEL' at any prompt exits the search flow.
+    Flow:
+    - If no freelancers exist, return immediately.
+    - Display the search options and prompt the user to choose a search type.
+    - Execute the corresponding search function:
+        - `search_by_keyword("name")`: Searches freelancers by name.
+        - `search_by_keyword("skills")`: Searches freelancers by skills.
+        - `search_by_id()`: Handles exact ID matching.
+    - If results are found, display them in a table (`display_freelancer_table()`).
+    - Allow users to view detailed freelancer profiles (`prompt_for_freelancer_detail()`).
     """
-    print("\n=== Search Freelancer ===")
+
+    print("\n=== 🔍 SEARCH FREELANCER ===")
+
+    # Check if there are any freelancers in the system
     if not freelancers:
-        print("No freelancers found. There is nothing to search.")
+        print("⚠️ No freelancers found. There is nothing to search.")
         return
 
-    menu = "0"
-    while menu != "4":
+    while True:
+        # Display search options
         print("\nHow would you like to search?")
-        print("1. By Name")
-        print("2. By Skills")
-        print("3. By ID (exact)")
-        print("4. Return to previous menu")
-        
-        menu = input("Enter your choice (1-4): ").strip()
+        print("1️⃣  By Name (partial match)")
+        print("2️⃣  By Skills (partial match)")
+        print("3️⃣  By ID (exact match)")
+        print("4️⃣  🔙 Return to previous menu")
+        print("-" * 40)
 
-        if menu == "1":
-            results = search_by_keyword("name")
-            if results is None:
-                print("Returning to previous menu...")
-                return
-            if not results:
-                print("No matching freelancers found for that name. Please try again.")
+        # Get user choice
+        menu = input("📌 Select an option (1-4): ").strip()
+
+        # Handle "By Name" and "By Skills" in a unified way
+        if menu in ("1", "2"):
+            search_field = "name" if menu == "1" else "skills"  # Determine search type
+            results = search_by_keyword(search_field)
+
+            if results is None: # results will be None only if the user types 'CANCEL'
+                continue
+
+            if not results: # results will be empty (but not None) if there's no matching freelancer searched by user
+                print(f"⚠️ No matching freelancers found for that {search_field}. Please try again.")
             else:
-                if not handle_matched_freelancers(results):
-                    return
-        elif menu == "2":
-            results = search_by_keyword("skills")
-            if results is None:
-                print("Returning to previous menu...")
-                return
-            if not results:
-                print("No matching freelancers found for those skills. Please try again.")
-            elif not handle_matched_freelancers(results):
-                return
-        elif menu == "3":
-            if not search_by_id():
-                return
-        elif menu == "4":
-            print("Returning to previous menu...")
-        else:
-            print("Invalid input. Please enter a number between 1 and 4.")
+                # Display search results in a table format
+                display_freelancer_table(results, f"SEARCH RESULTS (BY {search_field.upper()})")
 
+                # Allow user to view details of a freelancer from search results
+                prompt_for_freelancer_detail(results)
+
+        # Exact match search by Freelancer ID
+        elif menu == "3":
+            search_by_id() # `search_by_id()` handles its own workflow
+
+        # Exit search menu
+        elif menu == "4":
+            print("\n🔙 Returning to previous menu...\n")
+            return
+
+        # Handle invalid input
+        else:
+            print("⚠️ Invalid input! Please enter a number between 1 and 4.")
 
 def search_by_keyword(field):
     """
-    Prompts for a (partial) search keyword and returns freelancer IDs whose specified field
-    matches the keyword.
+    Prompts for a (partial) search keyword and returns a dictionary of matching freelancers.
 
-    For 'name', performs a case-insensitive substring match.
-    For 'skills', checks if any skill contains the keyword (case-insensitive).
-
-    Returns None if 'CANCEL' is entered, or a (possibly empty) list of IDs.
+    - For 'name', performs a case-insensitive substring match.
+    - For 'skills', checks if any skill contains the keyword (case-insensitive).
+    
+    Returns:
+        None if 'CANCEL' is entered, or a (possibly empty) dictionary {freelancer_id: freelancer_data}.
     """
     if field == "name":
         prompt = "\nEnter a (partial) name to search, or 'CANCEL' to exit: "
+        validation_func = validate_name
+        conversion_func = lambda x: x.title()  # Standardizes capitalization for better searching
     elif field == "skills":
-        prompt = "\nEnter a (partial) skill to search, or 'CANCEL' to exit: "
+        prompt = "\nEnter a (partial) skill (comma-separated) to search, or 'CANCEL' to exit: "
+        validation_func = validate_skills
+        conversion_func = lambda x: [skill.strip().lower() for skill in x.split(",") if skill.strip()]  # Standardizes case
     else:
-        return []
-    
-    keyword = input(prompt).strip()
-    if keyword.upper() == "CANCEL":
+        return {}
+
+    keyword = get_valid_input(
+        prompt=prompt,
+        validation_func=validation_func,
+        allow_cancel=True,
+        conversion_func=conversion_func
+    )
+
+    if keyword is None:  # Handles 'CANCEL'
+        print("\n🔙 Returning to previous menu...\n")
         return None
-    if not keyword:
-        return []
-    
-    keyword_lower = keyword.lower()
-    results = []
+
+    if not keyword:  # Empty input check
+        return {}
+
+    # For name searches, keyword is a string; for skills, it's a list.
+    keyword_lower = keyword.lower() if isinstance(keyword, str) else keyword
+
+    results = {}
     for fid, fdata in freelancers.items():
         if field == "name":
             if keyword_lower in fdata["name"].lower():
-                results.append(fid)
+                results[fid] = fdata
         elif field == "skills":
-            if any(keyword_lower in skill.lower() for skill in fdata["skills"]):
-                results.append(fid)
-    return results
+            # Check if any search term is a substring of any skill in the freelancer's skill list.
+            if any(any(k in s.lower() for s in fdata["skills"]) for k in keyword):
+                results[fid] = fdata
 
+    return results
 
 def search_by_id():
     """
@@ -825,9 +866,14 @@ def search_by_id():
     print("\n=== Search By ID ===")
 
     while True:
-        keyword = input("Enter an exact ID (e.g. FR001), or 'CANCEL' to return: ").strip()
+        keyword = get_valid_input(
+            prompt="📌 Enter an exact ID (e.g. FR001), or 'CANCEL' to return: ",
+            validation_func=validate_id,
+            allow_cancel=True,
+            conversion_func=lambda x: x.strip().upper()
+        )
 
-        if keyword.upper() == "CANCEL":
+        if keyword is None: # user inputs CANCEL
             return False
         
         if not keyword:
@@ -854,42 +900,6 @@ def search_by_id():
                 return False
             else:
                 print("Invalid input. Please type 'SEARCH' to continue searching, or 'CANCEL' to exit.")
-
-
-def handle_matched_freelancers(matched_ids):
-    """
-    Displays a summary of matched freelancers and prompts the user to:
-      - Enter an ID to view full details,
-      - Type 'RETURN' to go back to the search submenu,
-      - Type 'CANCEL' to exit the entire search flow.
-
-    Returns True if the user wants to return to the search submenu,
-    or False if they choose to cancel.
-    """
-    print(f"\nFound {len(matched_ids)} matching freelancer(s):")
-    for fid in matched_ids:
-        f = freelancers[fid]
-        assigned = f["assigned_project"] if f["assigned_project"] else "None"
-        print(f"- ID: {fid}, Name: {f['name']}, Rate: ${f['hourly_rate']}/hr, Assigned: {assigned}")
-
-    while True:
-        print("\nEnter a Freelancer ID from the matches to view details,")
-        print("or type 'RETURN' to do another search, or 'CANCEL' to exit completely.")
-        selection = input("Your choice: ").strip()
-        if not selection:
-            print("Please enter a valid ID, or 'RETURN', or 'CANCEL'.")
-            continue
-
-        if selection.upper() == "RETURN":
-            return True
-        if selection.upper() == "CANCEL":
-            return False
-        if selection in matched_ids:
-            display_freelancer_details(selection)
-        else:
-            print("That ID is not in the matched list. Please try again.")
-
-
 
 def update_freelancer_info():
     """
