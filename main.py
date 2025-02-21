@@ -214,7 +214,7 @@ app_state = {
     "project_id_counter": None # Counter to generate unique Project IDs
 }
 
-# ================ REUSABLE HELPER FUNCTIONS ================
+# ================ VALIDATION FUNCTIONS ================
 def get_valid_input(
     prompt,
     validation_func,
@@ -263,15 +263,6 @@ def get_valid_input(
         else:
             print(f"Invalid input: {error_msg}")
 
-def get_confirmation(prompt="Confirm? (Y/N): "):
-    """Handle yes/no confirmation prompts."""
-    while True:
-        confirm = input(prompt).strip().upper()
-        if confirm in ("Y", "N"):
-            return confirm == "Y"
-        print("Invalid input. Please enter Y or N.")
-
-# ================ VALIDATION FUNCTIONS ================
 def validate_name(name):
     """
     Checks:
@@ -495,6 +486,27 @@ def prompt_for_freelancer_detail(filtered_freelancers):
         else:
             print("⚠️  Invalid ID in current view. Please enter a valid ID or 'CANCEL'.")
 
+def get_confirmation(prompt="Confirm? (Y/N): "):
+    """Handle yes/no confirmation prompts."""
+    while True:
+        confirm = input(prompt).strip().upper()
+        if confirm in ("Y", "N"):
+            return confirm == "Y"
+        print("Invalid input. Please enter Y or N.")
+
+def confirm_update(field_name, old_value, new_value):
+    """
+    Utility function for final confirmation.
+    Returns True if the user confirms the update, otherwise False.
+    """
+    print(f"\nYou are about to change '{field_name}' value")
+    print(f"From: '{old_value}'")
+    print(f"To:   '{new_value}'")
+    if get_confirmation("✅ Confirm update? (Y/N): "):
+        return True
+    else:
+        print("\n❌ Update canceled.\n")
+        return False
 
 # ================================================= MAIN PROGRAM =========================================================
 
@@ -919,13 +931,18 @@ def update_freelancer_info():
         print("No freelancers available to update.")
         return
 
-    display_freelancer_summaries()
+    display_freelancer_table(freelancers, "ALL FREELANCERS")
 
     # Loop until a valid freelancer ID is provided or the user cancels.
     valid_fid = None
     while valid_fid is None:
-        fid = input("Enter a Freelancer ID to update (or type 'CANCEL' to return): ").strip()
-        if fid.upper() == "CANCEL":
+        fid = get_valid_input(
+            prompt="📌 Enter a Freelancer ID to update (or type 'CANCEL' to return): ",
+            validation_func=validate_id,
+            allow_cancel=True,
+            conversion_func=lambda x: x.strip().upper()
+        )
+        if fid is None:
             print("Returning to previous menu...")
             return
         if fid in freelancers:
@@ -1041,27 +1058,10 @@ def update_freelancer_info():
 
             if confirm_update(label, old_value, new_value_str):
                 freelancers[valid_fid][field] = new_value
+                display_freelancer_details(valid_fid)
                 print(success_msg)
         else:
             print("Invalid input. Please enter a number between 1 and 7.")
-
-
-def confirm_update(field_name, old_value, new_value):
-    """
-    Utility function for final confirmation.
-    Returns True if the user confirms the update, otherwise False.
-    """
-    print(f"\nYou are about to change '{field_name}' value")
-    print(f"From: '{old_value}'")
-    print(f"To:   '{new_value}'")
-    user_input = input("Confirm update? (Y/N): ").strip().upper()
-    if user_input == "Y":
-        return True
-    else:
-        print("Update canceled.")
-        return False
-
-
 
 def fire_freelancer():
     """
@@ -1082,8 +1082,9 @@ def fire_freelancer():
         print("No freelancers available to fire.")
         return
 
+    display_freelancer_table(freelancers, "ALL FREELANCERS")
+    
     while True:
-        display_freelancer_summaries()
         fid = input("Enter a Freelancer ID to fire (or type 'CANCEL' to return): ").strip().upper()
 
         # Cancel option
