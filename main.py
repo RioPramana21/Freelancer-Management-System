@@ -355,7 +355,7 @@ def validate_location(location):
         return False, "Location exceeds maximum length (255 characters)."
     return True, ""
 
-def validate_skills(skills_list: list):
+def validate_skills(skills_list):
     """
     Checks each skill:
         - Not empty list
@@ -371,10 +371,17 @@ def validate_skills(skills_list: list):
             return False, f"Skill '{skill}' exceeds 255 characters."
     return True, ""
 
-def validate_hourly_rate(rate: float):
-    """Checks that rate > 0."""
+def validate_hourly_rate(rate):
+    """
+    Checks that rate is a positive finite float.
+    
+    Returns:
+        (bool, str): Tuple indicating validation status and error message (if any).
+    """
     if rate <= 0:
         return False, "Hourly rate must be greater than zero."
+    if not (rate < float('inf')):  # Ensures it's a finite number
+        return False, "Hourly rate cannot be infinite."
     return True, ""
 
 # ================================================= HELPER FUNCTIONS =========================================================
@@ -494,7 +501,6 @@ def freelancer_management_main_menu():
             print("⚠️  Invalid input! Please enter a number between 1 and 7.")
 
 
-# Placeholder functions for Freelancer Management Features
 def hire_new_freelancer():
     """
     Displays a guided menu to hire a new freelancer by collecting the user's input
@@ -520,84 +526,84 @@ def hire_new_freelancer():
         - If canceled at any point, the function terminates early with no changes.
     """
 
-    print("\n=== Hire New Freelancer ===")
+    print("\n" + "=" * 40)
+    print("       🛠️ HIRE NEW FREELANCER       ")
+    print("=" * 40)
     
     # 1) NAME (no conversion, just raw string)
     name = get_valid_input(
-        prompt="Enter freelancer's name (or 'CANCEL' to return): ",
+        prompt="📌 Enter freelancer's name (or 'CANCEL' to return): ",
         validation_func=validate_name,
-        allow_cancel=True  # Allows user to type CANCEL
+        allow_cancel=True, # Allows user to type CANCEL
+        conversion_func=lambda x: x.title()
     )
-    if name is None:
-        # User canceled this step
-        return
+    if name is None: return # User canceled this step
 
     # 2) AGE (convert to int, with a custom error message for invalid integer format)
     age = get_valid_input(
-        prompt="Enter age (or 'CANCEL' to return): ",
+        prompt="📌 Enter age (or 'CANCEL' to return): ",
         validation_func=validate_age,
         allow_cancel=True,
         conversion_func=int,
-        conversion_error_msg="Please enter a valid integer for age (18 <= age < 100)."
+        conversion_error_msg="⚠️ Please enter a valid age (18-99)."
     )
-    if age is None:
-        return
+    if age is None: return
 
     # 3) GENDER (capitalize input, must be 'Male' or 'Female')
     gender = get_valid_input(
-        prompt="Enter gender (Male/Female) or 'CANCEL' to return: ",
+        prompt="📌 Enter gender (Male/Female) or 'CANCEL' to return: ",
         validation_func=validate_gender,
         allow_cancel=True,
         conversion_func=lambda x: x.lower().capitalize()
     )
-    if gender is None:
-        return
+    if gender is None: return
 
     # 4) LOCATION (raw string, validated for non-digit and ≤255 chars)
     location = get_valid_input(
-        prompt="Enter location (or 'CANCEL' to return): ",
+        prompt="📌 Enter location (or 'CANCEL' to return): ",
         validation_func=validate_location,
-        allow_cancel=True
+        allow_cancel=True,
+        conversion_func=lambda x: x.title()
     )
-    if location is None:
-        return
+    if location is None: return
 
     # 5) SKILLS (comma-separated, validated so none are numeric and each ≤255 chars)
     skills = get_valid_input(
-        prompt="Enter comma-separated skills (or 'CANCEL' to return): ",
+        prompt="📌 Enter comma-separated skills (or 'CANCEL' to return): ",
         validation_func=validate_skills,
         allow_cancel=True,
         conversion_func=lambda x: [skill.strip() for skill in x.split(",") if skill.strip()] # also filters out empty skills
     )
-    if skills is None:
-        return
+    if skills is None: return
 
     # 6) HOURLY RATE (float > 0, with a custom error message for parsing)
     hourly_rate = get_valid_input(
-        prompt="Enter hourly rate (or 'CANCEL' to return): ",
+        prompt="📌 Enter hourly rate (or 'CANCEL' to return): ",
         validation_func=validate_hourly_rate,
         allow_cancel=True,
         conversion_func=float,
-        conversion_error_msg="Please enter a valid numeric value for hourly rate."
+        conversion_error_msg="⚠️ Please enter a valid numeric value."
     )
-    if hourly_rate is None:
-        return
+    if hourly_rate is None: return
 
     # Generate a unique Freelancer ID in FR001 format
     freelancer_id = f"FR{app_state['freelancer_id_counter']:03d}"
 
     # --- Confirmation Step ---
-    print("\n=== Confirm New Freelancer ===")
-    print(f"ID: {freelancer_id}")
-    print(f"Name: {name}")
-    print(f"Age: {age}")
-    print(f"Gender: {gender}")
-    print(f"Location: {location}")
-    print(f"Skills: {', '.join(skills)}")
-    print(f"Hourly Rate: ${hourly_rate}/hr")
+    print("\n" + "=" * 40)
+    print("       ✅ CONFIRM NEW FREELANCER      ")
+    print("=" * 40)
 
-    # Ask user to confirm (Y/N). If confirmed, add to global dictionary and increment counter.
-    if get_confirmation("Confirm hiring? (Y/N): "):
+    print(f"🆔 ID          : {freelancer_id}")
+    print(f"👤 Name        : {name}")
+    print(f"🎂 Age         : {age}")
+    print(f"⚧  Gender      : {gender}")
+    print(f"📍 Location    : {location}")
+    print(f"🛠  Skills      : {', '.join(skills)}")
+    print(f"💰 Hourly Rate : ${hourly_rate:.2f}/hr")
+
+    # Ask user to confirm (Y/N). If confirmed, add to global freelancers dictionary and increment id counter.
+    if get_confirmation("✅ Confirm hiring? (Y/N): "):
         freelancers[freelancer_id] = {
             "name": name,
             "age": age,
@@ -610,9 +616,9 @@ def hire_new_freelancer():
             "total_earnings": 0.0
         }
         app_state["freelancer_id_counter"] += 1
-        print(f"Freelancer {name} (ID: {freelancer_id}) has been successfully hired!")
+        print(f"\n✅ Freelancer **{name}** (ID: {freelancer_id}) has been successfully hired! 🎉\n")
     else:
-        print("Hiring canceled.")
+        print("\n❌ Hiring canceled.\n")
 
 
 def review_freelancer_profiles():
