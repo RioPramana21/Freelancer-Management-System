@@ -416,6 +416,39 @@ def validate_id(id):
         return False, "❌ Error: Input cannot be empty. Please enter a valid ID."
     return True, ""
 
+def validate_project_budget(budget):
+    """
+    Validates that the project budget:
+    - Is a positive number.
+    - Does not exceed the company's available funds.
+
+    Parameters:
+        budget (float): The proposed project budget.
+
+    Returns:
+        (bool, str): Tuple indicating validation status and an error message if invalid.
+    """
+    if budget <= 0:
+        return False, "⚠️ Budget must be a positive number."
+    
+    available_funds = company_budget["total_budget"] - company_budget["total_allocated_funds"]  # Budget left for new projects
+    if budget > available_funds:
+        return False, f"⚠️ Insufficient funds! The maximum budget allowed is ${available_funds:.2f}."
+
+    return True, ""
+
+def validate_estimated_hours(hours):
+    if hours <= 0:
+        return False, "Estimated hours must be >= 1."
+    return True, ""
+
+def validate_freelancer_choice(fid, eligible_freelancers):
+    if not fid:
+        return False, "❌ Error: Input cannot be empty. Please enter a valid ID."
+    if fid in eligible_freelancers:
+        return True, ""
+    return False, "❌ Freelancer not in the eligible list."
+
 # ================================================= HELPER FUNCTIONS =========================================================
 def initialize_id_counter(collection, counter_key, prefix_len):
     """
@@ -546,8 +579,9 @@ def search_by_keyword(field):
     Prompts for a (partial) search keyword and returns a dictionary of matching freelancers.
 
     - For 'name', performs a case-insensitive substring match.
-    - For 'skills', checks if any skill contains the keyword (case-insensitive).
-    
+    - For 'skills', splits the input into search terms and returns freelancers
+      if any term is found as a substring in any skill (case-insensitive).
+
     Returns:
         None if 'CANCEL' is entered, or a (possibly empty) dictionary {freelancer_id: freelancer_data}.
     """
@@ -558,10 +592,12 @@ def search_by_keyword(field):
     elif field == "skills":
         prompt = "\nEnter a (partial) skill (comma-separated) to search, or 'CANCEL' to exit: "
         validation_func = validate_skills
-        conversion_func = lambda x: list(set(skill.strip().title() for skill in x.split(",") if skill.strip()))
+        # Convert each entered skill to lower case after stripping whitespace.
+        conversion_func = lambda x: [skill.strip().lower() for skill in x.split(",") if skill.strip()]
     else:
         return {}
 
+    print(f"\n=== Search By {field.capitalize()} ===")
     keyword = get_valid_input(
         prompt=prompt,
         validation_func=validation_func,
@@ -569,24 +605,22 @@ def search_by_keyword(field):
         conversion_func=conversion_func
     )
 
-    if keyword is None:  # Handles 'CANCEL'
+    if keyword is None:
         print("\n🔙 Returning to previous menu...\n")
         return None
 
-    if not keyword:  # Empty input check
-        return {}
-
-    # For name searches, keyword is a string; for skills, it's a list.
-    keyword_lower = keyword.lower() if isinstance(keyword, str) else keyword
-
+    # For name searches, keyword is a string. For skills, it's a list of search terms.
     results = {}
-    for fid, fdata in freelancers.items():
-        if field == "name":
+    if field == "name":
+        keyword_lower = keyword.lower()
+        for fid, fdata in freelancers.items():
             if keyword_lower in fdata["name"].lower():
                 results[fid] = fdata
-        elif field == "skills":
+    elif field == "skills":
+        search_terms = keyword  # Already a list of lower-case search terms.
+        for fid, fdata in freelancers.items():
             # Check if any search term is a substring of any skill in the freelancer's skill list.
-            if any(any(k in s.lower() for s in fdata["skills"]) for k in keyword):
+            if any(term in s.lower() for term in search_terms for s in fdata["skills"]):
                 results[fid] = fdata
 
     return results
@@ -604,39 +638,19 @@ def search_by_id():
 
     while True:
         keyword = get_valid_input(
-            prompt="📌 Enter an exact ID (e.g. FR001), or 'CANCEL' to return: ",
+            prompt="📌 Enter an exact Freelancer ID (e.g., FR001), or 'CANCEL' to return: ",
             validation_func=validate_id,
             allow_cancel=True,
             conversion_func=lambda x: x.strip().upper()
         )
 
-        if keyword is None: # user inputs CANCEL
-            return False
-        
-        if not keyword:
-            print("Please enter a valid ID or 'CANCEL'.")
-            continue
-        
-        match_id = None
-        for fid in freelancers.keys():
-            if fid.lower() == keyword.lower():
-                match_id = fid
-                break
-        
-        if match_id is None:
-            print("No freelancer found with that ID. Please try again or type 'CANCEL'.")
-            continue
-        
-        display_freelancer_details(match_id)
+        if keyword is None:  # User canceled
+            return
 
-        while True:
-            choice = input("\nType 'SEARCH' to search another ID, or 'CANCEL' to exit: ").strip().upper()
-            if choice == "SEARCH":
-                break  # Continue outer loop to search another ID
-            elif choice == "CANCEL":
-                return False
-            else:
-                print("Invalid input. Please type 'SEARCH' to continue searching, or 'CANCEL' to exit.")
+        if keyword in freelancers:
+            display_freelancer_details(keyword)
+        else:
+            print("⚠️ No freelancer found with that ID. Please try again or type 'CANCEL'.")
 
 def confirm_update(field_name, old_value, new_value):
     """
@@ -666,7 +680,7 @@ def get_performance_data():
     total_earnings_sum = 0.0
 
     for fid, fdata in freelancers.items():
-        total_earnings = fdata.get("total_earnings", 0.0)
+        total_earnings = fdata.get("total_earnings")
         total_earnings_sum += total_earnings
 
         performance_data.append({
@@ -674,7 +688,7 @@ def get_performance_data():
             "name": fdata["name"],
             "total_earnings": total_earnings,
             "num_completed": len(fdata.get("completed_projects", [])),
-            "hourly_rate": fdata.get("hourly_rate", 0.0)
+            "hourly_rate": fdata.get("hourly_rate")
         })
     
     return performance_data, total_earnings_sum
@@ -686,7 +700,7 @@ def display_performance_report(performance_data, total_earnings_sum, title="FREE
     Fields:
       - ID
       - Name
-      - Completed Proj
+      - Completed Projects
       - Hourly Rate
       - Total Earnings
     """
@@ -694,7 +708,7 @@ def display_performance_report(performance_data, total_earnings_sum, title="FREE
         print("No performance data available.")
         return
 
-    table_width = 100  # Adjust width as needed
+    table_width = 100
     print("\n" + "=" * table_width)
     print(" " * ((table_width - len(title)) // 2) + title)
     print("=" * table_width)
@@ -702,18 +716,18 @@ def display_performance_report(performance_data, total_earnings_sum, title="FREE
     # Header row
     header = (f"{'🆔 ID':<10}"
               f"{'👤 Name':<20}"
-              f"{'Completed Proj':<20}"
-              f"{'Hourly Rate':<15}"
-              f"{'Total Earnings':<20}")
+              f"{'✅ Completed Projects':<25}"
+              f"{'💰 Hourly Rate':<15}"
+              f"{'💰 Total Earnings':<20}")
     print(header)
     print("-" * table_width)
     
     for pdata in performance_data:
         row = (f"{pdata['id']:<10}"
                f"{pdata['name']:<20}"
-               f"{pdata['num_completed']:^20}"
-               f"${pdata['hourly_rate']:<14.2f}"
-               f"${pdata['total_earnings']:<19.2f}")
+               f"{pdata['num_completed']:^30}"
+               f"${pdata['hourly_rate']:<15.2f}"
+               f"${pdata['total_earnings']:<20.2f}")
         print(row)
     
     print("=" * table_width)
@@ -742,9 +756,9 @@ def display_project_table(filtered_projects, title="PROJECTS"):
     print("=" * 120)
     print(
         f"{'🆔 ID':<10}"
-        f"{'📌 Name':<30}"
-        f"{'💰 Actual Cost':<12}"
-        f"{'🕒 Est. Hours':<12}"
+        f"{'📌 Name':<35}"
+        f"{'💰 Actual Cost':<15}"
+        f"{'🕒 Est. Hours':<15}"
         f"{'👤 Freelancer':<15}"
         f"{'📊 Status':<15}"
     )
@@ -756,9 +770,9 @@ def display_project_table(filtered_projects, title="PROJECTS"):
         
         print(
             f"{pid:<10}"
-            f"{p['name']:<30}"
-            f"${p['actual_cost']:<10.2f}"
-            f"{p['estimated_hours']:<12}"
+            f"{p['name']:<40}"
+            f"${p['actual_cost']:<15.2f}"
+            f"{p['estimated_hours']:<15}"
             f"{freelancer:<15}"
             f"{p['status']:<15}"
         )
@@ -777,13 +791,13 @@ def display_project_details(project_id):
     print("         📄 PROJECT DETAILED PROFILE         ")
     print("=" * 60)
 
-    print(f"{'🆔 ID':<20}: {project_id}")
-    print(f"{'📌 Name':<20}: {p['name']}")
-    print(f"{'💰 Budget':<20}: ${p['budget']:.2f}")
-    print(f"{'🕒 Estimated Hours':<20}: {p['estimated_hours']}")
-    print(f"{'👤 Assigned Freelancer':<20}: {p['assigned_freelancer_id'] or 'None'}")
-    print(f"{'📊 Status':<20}: {p['status']}")
-    print(f"{'💰 Actual Cost':<20}: ${p['actual_cost']:.2f}")
+    print(f"{'🆔 ID':<25}: {project_id}")
+    print(f"{'📌 Name':<25}: {p['name']}")
+    print(f"{'💰 Budget':<25}: ${p['budget']:.2f}")
+    print(f"{'🕒 Estimated Hours':<25}: {p['estimated_hours']}")
+    print(f"{'👤 Assigned Freelancer':<25}: {p['assigned_freelancer_id'] or 'None'}")
+    print(f"{'📊 Status':<25}: {p['status']}")
+    print(f"{'💰 Actual Cost':<25}: ${p['actual_cost']:.2f}")
     print("=" * 60)
 
 def prompt_for_project_detail(filtered_projects):
@@ -808,37 +822,6 @@ def prompt_for_project_detail(filtered_projects):
         else:
             print("⚠️  Invalid ID in current view. Please enter a valid ID or 'CANCEL'.")
 
-def validate_project_budget(budget):
-    """
-    Validates that the project budget:
-    - Is a positive number.
-    - Does not exceed the company's available funds.
-
-    Parameters:
-        budget (float): The proposed project budget.
-
-    Returns:
-        (bool, str): Tuple indicating validation status and an error message if invalid.
-    """
-    if budget <= 0:
-        return False, "⚠️ Budget must be a positive number."
-    
-    available_funds = company_budget["total_budget"] - company_budget["total_allocated_funds"]  # Budget left for new projects
-    if budget > available_funds:
-        return False, f"⚠️ Insufficient funds! The maximum budget allowed is ${available_funds:.2f}."
-
-    return True, ""
-
-def validate_estimated_hours(hours):
-    if hours <= 0:
-        return False, "Estimated hours must be >= 1."
-    return True, ""
-
-def validate_freelancer_choice(fid, eligible_freelancers):
-    if fid in eligible_freelancers:
-        return True, ""
-    return False, "Freelancer not in the eligible list."
-
 def find_eligible_freelancers(budget, est_hours):
     eligible = {}
     for fid, fdata in freelancers.items():
@@ -857,7 +840,7 @@ def prompt_active_project_id(active_projects):
     """
     while True:
         project_id = get_valid_input(
-            prompt="\n📌 Enter the project ID to mark as completed (or 'CANCEL' to return): ",
+            prompt="\n📌 Enter the project ID to operate on (or 'CANCEL' to return): ",
             validation_func=validate_id,
             allow_cancel=True,
             conversion_func=lambda x: x.strip().upper()
@@ -1088,6 +1071,7 @@ def hire_new_freelancer():
             "location": location,
             "skills": skills,
             "hourly_rate": hourly_rate,
+            "status": "Available",
             "assigned_project": None,
             "completed_projects": [],
             "total_earnings": 0.0
@@ -1432,16 +1416,16 @@ def view_freelancers_performance_report():
 
     menu = "0"
     while menu != "4":
-        print("\nHow would you like to view the performance report?")
-        print("1. Default order (sorted by ID ascending)")
-        print("2. Total earnings descending")
-        print("3. Total earnings ascending")
-        print("4. Return to previous menu")
+        print("\n📊 How would you like to view the performance report?")
+        print("1️⃣  Sort by ID (Ascending)")
+        print("2️⃣  Sort by Earnings (Highest to Lowest)")
+        print("3️⃣  Sort by Earnings (Lowest to Highest)")
+        print("4️⃣  🔙 Return to previous menu")
         
-        menu = input("Enter your choice (1-4): ").strip()
+        menu = input("📌 Select an option (1-4): ").strip()
 
         if menu == "4":
-            print("Returning to previous menu...")
+            print("\n🔙 Returning to previous menu...\n")
             return
 
         performance_data, total_earnings_sum = get_performance_data()
@@ -1453,7 +1437,7 @@ def view_freelancers_performance_report():
         elif menu == "3":
             performance_data.sort(key=lambda x: x["total_earnings"])
         else:
-            print("Invalid input. Please enter a number between 1 and 4.")
+            print("⚠️ Invalid input. Please enter a number between 1 and 4.")
             continue
 
         display_performance_report(performance_data, total_earnings_sum)
