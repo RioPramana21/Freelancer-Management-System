@@ -1348,7 +1348,7 @@ def project_management_main_menu():
         if menu == "1":
             review_projects()
         elif menu == "2":
-            assign_freelancer_to_project()
+            assign_project_to_freelancer()
         elif menu == "3":
             mark_project_completed()
         elif menu == "4":
@@ -1401,34 +1401,33 @@ def review_projects():
 
         prompt_for_project_detail(filtered_projects)
 
-def assign_freelancer_to_project():
+def assign_project_to_freelancer():
     """
     Creates a new project and assigns a suitable freelancer.
 
-    - Prompts for: project name, max budget, estimated hours.
-    - Filters freelancers (must be 'Available' and fit (hourly_rate * hours <= budget)).
-    - Lets admin adjust the budget if no eligible freelancer is found.
-    - Prompts admin to pick one from the eligible list.
-    - Creates the project in 'projects' dict with ID like 'P0001' 
-      using app_state['project_id_counter'].
-    - Marks the chosen freelancer as 'Assigned'.
+    Steps:
+      1. Prompt for project name, max budget, and estimated hours.
+      2. Filter available freelancers based on (hourly_rate * estimated_hours <= budget).
+      3. If no eligible freelancer is found, allow the admin to adjust the budget.
+      4. Display eligible freelancers and prompt the admin to select one.
+      5. Compute the project's actual cost (using the freelancer's current rate).
+      6. Confirm the project details with the admin.
+      7. Create the project, update allocated funds, and mark the freelancer as assigned.
     """
-
     print("\n=== Assign a Freelancer to a New Project ===")
 
-    # 1) PROJECT NAME
+    # Step 1: Get project details
     project_name = get_valid_input(
         prompt="Enter project name (or 'CANCEL' to return): ",
-        validation_func=validate_project_name,
+        validation_func=validate_name,
         allow_cancel=True
     )
     if project_name is None:
         return
 
-    # 2) PROJECT BUDGET
     project_budget = get_valid_input(
         prompt="Enter project max budget (or 'CANCEL' to return): ",
-        validation_func=validate_budget,
+        validation_func=validate_project_budget,
         allow_cancel=True,
         conversion_func=float,
         conversion_error_msg="Please enter a valid positive number for budget."
@@ -1436,7 +1435,6 @@ def assign_freelancer_to_project():
     if project_budget is None:
         return
 
-    # 3) ESTIMATED HOURS
     estimated_hours = get_valid_input(
         prompt="Enter estimated hours (or 'CANCEL' to return): ",
         validation_func=validate_estimated_hours,
@@ -1447,10 +1445,10 @@ def assign_freelancer_to_project():
     if estimated_hours is None:
         return
 
-    # 4) Check for eligible freelancers
+    # Step 2: Find eligible freelancers based on budget and hours
     eligible_fids = find_eligible_freelancers(project_budget, estimated_hours)
 
-    # Let admin adjust if no one qualifies
+    # Step 3: If none are eligible, let admin adjust the budget until someone qualifies
     while not eligible_fids:
         print("\nNo freelancers qualify under the current budget.")
         choice = input("Type 'A' to adjust the budget or 'CANCEL' to quit: ").strip().upper()
@@ -1460,7 +1458,7 @@ def assign_freelancer_to_project():
         elif choice == "A":
             project_budget = get_valid_input(
                 prompt="Enter new project budget (or 'CANCEL' to return): ",
-                validation_func=validate_budget,
+                validation_func=validate_project_budget,
                 allow_cancel=True,
                 conversion_func=float,
                 conversion_error_msg="Please enter a valid positive number for budget."
@@ -1471,7 +1469,7 @@ def assign_freelancer_to_project():
         else:
             print("Invalid input. Please type 'A' or 'CANCEL'.")
 
-    # 5) Pick one
+    # Step 4: Display eligible freelancers and prompt admin to choose one
     print("\nEligible Freelancers:")
     for fid in eligible_fids:
         f = freelancers[fid]
@@ -1485,24 +1483,24 @@ def assign_freelancer_to_project():
     if chosen_fid is None:
         return
 
-    # 6) Confirmation
-    # Compute actual_cost at creation time using the chosen freelancer's current rate.
+    # Step 5: Calculate actual cost using the chosen freelancer's current rate
     freelancer_rate = freelancers[chosen_fid]["hourly_rate"]
     actual_cost = freelancer_rate * estimated_hours
-    
+
+    # Step 6: Confirm project details
     print("\n=== Confirm New Project ===")
-    print(f"Project Name: {project_name}")
-    print(f"Budget: {project_budget}")
-    print(f"Estimated Hours: {estimated_hours}")
-    print(f"Calculated Actual Cost: {actual_cost}")
+    print(f"Project Name     : {project_name}")
+    print(f"Budget           : {project_budget}")
+    print(f"Estimated Hours  : {estimated_hours}")
+    print(f"Calculated Cost  : {actual_cost}")
     print(f"Freelancer Chosen: {chosen_fid} - {freelancers[chosen_fid]['name']}")
     if not get_confirmation("Confirm project creation? (Y/N): "):
         print("Canceled.")
         return
 
-    # 7) Create the project
+    # Step 7: Create the project and update records
     project_id = f"P{app_state['project_id_counter']:04d}"
-    app_state["project_id_counter"] += 1  # increment for future projects
+    app_state["project_id_counter"] += 1
 
     projects[project_id] = {
         "name": project_name,
@@ -1512,26 +1510,17 @@ def assign_freelancer_to_project():
         "assigned_freelancer_id": chosen_fid,
         "actual_cost": actual_cost
     }
-    # Update allocated funds using the precomputed actual_cost.
     company_budget["total_allocated_funds"] += actual_cost
 
-    # Mark freelancer as assigned
     freelancers[chosen_fid]["status"] = "Assigned"
     freelancers[chosen_fid]["assigned_project"] = project_id
 
     print(f"\nProject '{project_id}' created and assigned to freelancer '{chosen_fid}'.")
 
 
+
 # ============== VALIDATION & HELPER STUBS ==============
-
-def validate_project_name(name):
-    if not name:
-        return False, "Project name cannot be empty."
-    if len(name) > 255:
-        return False, "Project name exceeds 255 characters."
-    return True, ""
-
-def validate_budget(budget):
+def validate_project_budget(budget):
     if budget <= 0:
         return False, "Budget must be a positive number."
     return True, ""
