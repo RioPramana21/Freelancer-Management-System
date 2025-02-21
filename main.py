@@ -1,3 +1,5 @@
+import re  # For regex validation
+
 freelancers = {
     "FR001": {
         "name": "Alice Johnson",
@@ -265,17 +267,28 @@ def get_valid_input(
 
 def validate_name(name):
     """
-    Checks:
-        - Not empty
-        - Only letters (plus space)
-        - <= 255 chars
+    Validates name:
+    ✅ Allows letters (A-Z, a-z), spaces, hyphens (-), apostrophes ('), dots (.), and commas (,).
+    ✅ Supports titles (Dr., Mr.) and suffixes (PhD, MSc, Jr.).
+    ❌ Prevents leading/trailing punctuation.
+    ❌ Prevents names made only of punctuation.
+    ❌ Ensures length does not exceed 255 characters.
+    
+    Returns:
+        (bool, str): Tuple indicating validation status and error message (if any).
     """
     if not name:
-        return False, "Name cannot be empty."
-    if not name.replace(" ", "").isalpha():
-        return False, "Name must contain only alphabets (A-Z)."
+        return False, "❌ Name cannot be empty."
+    
+    # Length limit
     if len(name) > 255:
-        return False, "Name exceeds maximum length (255 characters)."
+        return False, "❌ Name cannot exceed 255 characters."
+
+    # Regex: Allows A-Z, a-z, spaces, hyphens (-), apostrophes ('), dots (.), commas (,)
+    # Prevents leading/trailing `-`, `'`, `.`, `,` and consecutive `--` or `''`
+    if not re.match(r"^[A-Za-z]+([-'.,]?[ ]*[A-Za-z]+)*$", name):
+        return False, "❌ Name must contain only letters, spaces, hyphens (-), apostrophes ('), dots (.), or commas (,)."
+
     return True, ""
 
 def validate_age(age):
@@ -283,6 +296,9 @@ def validate_age(age):
     Checks:
         - Age >= 18
         - Age < 100
+        
+    Returns:
+        (bool, str): Tuple indicating validation status and error message (if any).
     """
     if age < 18:
         return False, "Age must be at least 18."
@@ -293,6 +309,9 @@ def validate_age(age):
 def validate_gender(gender):
     """
     Checks: must be 'Male' or 'Female'.
+    
+    Returns:
+        (bool, str): Tuple indicating validation status and error message (if any).
     """
     is_valid = gender in ["Male", "Female"]
     return is_valid, "Gender must be Male or Female."
@@ -314,16 +333,17 @@ def validate_location(location):
 
 def validate_skills(skills_list):
     """
-    Checks each skill:
-        - Not empty list
-        - No skill is purely numeric
-        - No skill > 255 chars
+    Validates freelancer skills:
+    ✅ Removes duplicates.
+    ✅ Ensures each skill is alphabetic/alphanumeric.
+    ❌ Prevents empty skills or skills that are just numbers/special characters.
     """
     if not skills_list:
         return False, "At least one skill is required (e.g. Python3, JavaScript)."
     for skill in skills_list:
-        if skill.isdigit():
-            return False, f"Skill '{skill}' cannot be only numbers. Please enter valid skills (e.g. Python3, JavaScript)"
+        # Ensure skill contains at least one letter
+        if not any(c.isalpha() for c in skill):
+            return False, f"❌ Skill '{skill}' is invalid. Skills must contain letters. Please enter valid skills (e.g. Python3, Java)"
         if len(skill) > 255:
             return False, f"Skill '{skill}' exceeds 255 characters."
     return True, ""
@@ -341,9 +361,34 @@ def validate_hourly_rate(rate):
         return False, "Hourly rate cannot be infinite."
     return True, ""
 
+def validate_project_name(project_name):
+    """
+    Validates project name:
+    ✅ Allows letters, numbers, spaces, and punctuation (-, ', ., ,, ", !, ?).
+    ✅ Allows quotes (') and double hyphens (--).
+    ❌ Prevents leading/trailing punctuation.
+    ❌ Prevents names made only of punctuation or numbers.
+    ❌ Ensures length does not exceed 255 characters.
+    """
+    if not project_name:
+        return False, "❌ Project name cannot be empty."
+
+    if len(project_name) > 255:
+        return False, "❌ Project name cannot exceed 255 characters."
+
+    # Prevents purely numeric names (e.g., "12345")
+    if project_name.isdigit():
+        return False, "❌ Project name cannot be purely numbers."
+
+    # Ensure project name is not purely punctuation (e.g., "!!!" or "----")
+    if all(char in "-'.,!?\" " for char in project_name):
+        return False, "❌ Project name must contain at least one letter or number."
+
+    return True, ""
+
 def validate_updated_budget(new_budget, allocated_funds):
     """
-    Ensures the budget is a valid number and above allocated funds.
+    Ensures the budget is a valid finite positive number and above allocated funds.
 
     Parameters:
     - new_budget (float): The entered new budget value.
@@ -356,6 +401,8 @@ def validate_updated_budget(new_budget, allocated_funds):
         return False, "Budget must be a positive number."
     if new_budget < allocated_funds:
         return False, f"Budget cannot be lower than allocated funds (${allocated_funds:.2f})."
+    if not (new_budget < float('inf')):  # Ensures it's a finite number
+        return False, "Hourly rate cannot be infinite."
     return True, ""
 
 def validate_id(id):
@@ -511,7 +558,7 @@ def search_by_keyword(field):
     elif field == "skills":
         prompt = "\nEnter a (partial) skill (comma-separated) to search, or 'CANCEL' to exit: "
         validation_func = validate_skills
-        conversion_func = lambda x: [skill.strip().lower() for skill in x.split(",") if skill.strip()]  # Standardizes case
+        conversion_func = lambda x: list(set(skill.strip().title() for skill in x.split(",") if skill.strip()))
     else:
         return {}
 
@@ -678,7 +725,6 @@ def display_performance_report(performance_data, total_earnings_sum, title="FREE
     print(f"Overall Total Earnings: ${total_earnings_sum:.2f}")
     print(f"Average Earnings per Freelancer: ${avg_earnings:.2f}")
 
-# Project Management Module
 def display_project_table(filtered_projects, title="PROJECTS"):
     """
     Displays a table of projects.
@@ -853,7 +899,6 @@ def finalize_project_completion(proj_id):
     company_budget["total_allocated_funds"] -= actual_cost
 
 # ================================================= MAIN PROGRAM =========================================================
-
 def app_main_menu():
     initialize_id_counter(freelancers, "freelancer_id_counter", 2)  # Example ID = FR101
     initialize_id_counter(projects, "project_id_counter", 1)  # Example ID = P1001
@@ -1002,7 +1047,8 @@ def hire_new_freelancer():
         prompt="📌 Enter comma-separated skills (or 'CANCEL' to return): ",
         validation_func=validate_skills,
         allow_cancel=True,
-        conversion_func=lambda x: [skill.strip() for skill in x.split(",") if skill.strip()] # also filters out empty skills
+        # also filters out empty skills, strips whitespace, title-cases each, and removes duplicates:
+        conversion_func=lambda x: list(set(skill.strip().title() for skill in x.split(",") if skill.strip()))
     )
     if skills is None: return
 
@@ -1240,7 +1286,7 @@ def update_freelancer_info():
             "label": "Skills",
             "prompt": "Enter new comma-separated skills (or 'CANCEL' to return): ",
             "validation_func": validate_skills,
-            "conversion_func": lambda x: [s.strip() for s in x.split(",") if s.strip()],
+            "conversion_func": lambda x: list(set(skill.strip().title() for skill in x.split(",") if skill.strip())),
             "conversion_error_msg": None,
             "success_msg": "Freelancer skills updated successfully!",
             "special": "skills"  # Special handling for formatting skills
@@ -1513,7 +1559,7 @@ def assign_project_to_freelancer():
     # Step 1: Get project details
     project_name = get_valid_input(
         prompt="📌 Enter project name (or 'CANCEL' to return): ",
-        validation_func=validate_name,
+        validation_func=validate_project_name,
         allow_cancel=True,
         conversion_func=lambda x: x.title()
     )
@@ -1724,6 +1770,7 @@ def cancel_project():
     print(f"👤 Freelancer '{assigned_freelancer}' is now AVAILABLE.")
     print(f"💰 ${allocated_funds:.2f} in allocated funds has been freed up.")
 
+# ================================================= BUDGET MANAGEMENT MODULE =========================================================
 def budget_management_main_menu():
     while True:
         print("\n" + "=" * 40)
@@ -1746,7 +1793,6 @@ def budget_management_main_menu():
         else:
             print("⚠️  Invalid choice! Please enter either 1 or 2.")
 
-            
 def adjust_budget():
     """ 
     Adjusts the company budget while ensuring it stays above allocated funds.
@@ -1793,7 +1839,6 @@ def adjust_budget():
             print("\n❌ Budget update canceled.\n")
 
         return  # Exit the loop after update or cancellation
-
 
 if __name__ == "__main__":
     app_main_menu()
