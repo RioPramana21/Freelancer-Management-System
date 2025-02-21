@@ -386,21 +386,22 @@ def validate_project_name(project_name):
 
     return True, ""
 
-def validate_updated_budget(new_budget, allocated_funds):
+def validate_updated_budget(new_budget):
     """
     Ensures the budget is a valid finite positive number and above allocated funds.
 
     Parameters:
     - new_budget (float): The entered new budget value.
-    - allocated_funds (float): The current allocated funds.
 
     Returns:
     - (bool, str): Tuple containing validation status and error message (if any).
     """
     if new_budget <= 0:
         return False, "Budget must be a positive number."
-    if new_budget < allocated_funds:
-        return False, f"Budget cannot be lower than allocated funds (${allocated_funds:.2f})."
+    if new_budget < company_budget["total_allocated_funds"]:
+        return False, f"Budget cannot be lower than allocated funds (${company_budget["total_allocated_funds"]:.2f})."
+    if new_budget == company_budget["total_budget"]:
+        return False, f"New budget cannot be the same as current budget."
     if not (new_budget < float('inf')):  # Ensures it's a finite number
         return False, "Hourly rate cannot be infinite."
     return True, ""
@@ -1343,10 +1344,17 @@ def update_freelancer_info():
             if special == "skills":
                 old_value = ", ".join(freelancers[valid_fid][field])
                 new_value_str = ", ".join(new_value)
+                no_changes = set(freelancers[valid_fid][field]) & set(new_value)
             else:
                 old_value = freelancers[valid_fid][field]
                 new_value_str = new_value
-
+                no_changes = new_value == old_value
+                
+            # Prevent redundant updates
+            if no_changes:
+                print(f"⚠️  No changes detected in {label}. Update canceled.")
+                continue    
+                
             if confirm_update(label, old_value, new_value_str):
                 freelancers[valid_fid][field] = new_value
                 display_freelancer_details(valid_fid)
@@ -1820,7 +1828,7 @@ def adjust_budget():
         # Request new budget input, ensuring it's a valid float and meets constraints
         new_budget = get_valid_input(
             prompt="💡 Enter new budget (or type 'CANCEL' to return): ",
-            validation_func=lambda x: validate_updated_budget(x, allocated_funds),
+            validation_func=validate_updated_budget,
             allow_cancel=True,  # Enables users to cancel and exit mid-input
             conversion_func=float,  # Converts user input to float
             conversion_error_msg="⚠️  Please enter a valid positive number."  # Custom error message for invalid input
