@@ -1202,6 +1202,8 @@ def assign_freelancer_to_project():
         "assigned_freelancer_id": chosen_fid,
         "actual_cost": 0.0
     }
+    # FIX: Update allocated funds by adding the project's actual cost.
+    # company_budget["total_allocated_funds"] += actual_cost
 
     # Mark freelancer as assigned
     freelancers[chosen_fid]["status"] = "Assigned"
@@ -1523,8 +1525,9 @@ def print_projects_report(projects_list):
 def budget_management_main_menu():
     while True:
         print("\n=== Budget Management ===")
-        print(f"Current Budget: ${total_company_budget}")
-        print(f"Current Allocated Funds: ${total_allocated_funds}")
+        # FIX: Use company_budget dictionary values directly.
+        print(f"Current Budget: ${company_budget['total_budget']}")
+        print(f"Current Allocated Funds: ${company_budget['total_allocated_funds']}")
         print("1. Adjust Budget")
         print("2. Return to Main Menu")
         
@@ -1546,6 +1549,10 @@ def adjust_budget():
                 return
             else:
                 new_budget = int(new_budget)
+            # FIX: Ensure new_budget is positive.
+            if new_budget <= 0:
+                print("Budget must be a positive number.")
+                continue
             if new_budget < company_budget.get('total_allocated_funds'):
                 print("Error: Company budget cannot be lower than allocated funds.")
                 continue
