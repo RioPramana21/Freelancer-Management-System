@@ -1,5 +1,4 @@
 import sys
-import os
 
 freelancers = {
     "FR001": {
@@ -395,8 +394,8 @@ def get_next_project_id():
 def app_main_menu():
     get_next_freelancer_id()
     get_next_project_id()
-    menu = 0
-    while menu != 4:
+    menu = "0"
+    while menu != "4":
         print("\n=== Freelancer Management System ===")
         print("1. Freelancer Management")
         print("2. Project Management")
@@ -957,7 +956,6 @@ def fire_freelancer():
 
         # Check if the ID is valid
         if fid in freelancers:
-            os.system('cls' if os.name == 'nt' else 'clear')
             # Display the detailed profile for clarity
             display_freelancer_details(fid)
 
