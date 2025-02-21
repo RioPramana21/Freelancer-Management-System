@@ -396,6 +396,22 @@ def initialize_id_counter(collection, counter_key, prefix_len):
     else:
         app_state[counter_key] = max(int(key[prefix_len:]) for key in collection.keys()) + 1
 
+def validate_updated_budget(new_budget, allocated_funds):
+    """
+    Ensures the budget is a valid number and above allocated funds.
+
+    Parameters:
+    - new_budget (float): The entered new budget value.
+    - allocated_funds (float): The current allocated funds.
+
+    Returns:
+    - (bool, str): Tuple containing validation status and error message (if any).
+    """
+    if new_budget <= 0:
+        return False, "Budget must be a positive number."
+    if new_budget < allocated_funds:
+        return False, f"Budget cannot be lower than allocated funds (${allocated_funds:.2f})."
+    return True, ""
 
 
 # ================================================= MAIN PROGRAM =========================================================
@@ -1545,8 +1561,8 @@ def budget_management_main_menu():
         print("\n" + "=" * 40)
         print("     💰 BUDGET MANAGEMENT MENU 💰      ")
         print("=" * 40)
-        print(f"Current Budget         : ${company_budget['total_budget']:.2f}")
-        print(f"Allocated Funds        : ${company_budget['total_allocated_funds']:.2f}")
+        print(f"📊  Current Budget         : ${company_budget['total_budget']:.2f}")
+        print(f"🔹  Allocated Funds        : ${company_budget['total_allocated_funds']:.2f}")
         print("-" * 40)
         print("1️⃣  Adjust Budget")
         print("2️⃣  🔙 Return to Main Menu")
@@ -1564,35 +1580,52 @@ def budget_management_main_menu():
 
             
 def adjust_budget():
-    global company_budget
+    """ 
+    Adjusts the company budget while ensuring it stays above allocated funds.
+    
+    Flow:
+    1. Display the current budget and allocated funds.
+    2. Get valid user input for the new budget amount.
+    3. Validate that the new budget is a positive number and at least >= the allocated funds.
+    4. Ask for confirmation before updating.
+    5. Apply the update or cancel based on user input.
+    """
+
+    allocated_funds = company_budget["total_allocated_funds"]  # Cache the allocated funds value for efficiency
+
     while True:
-        try:
-            new_budget = input("Enter new budget amount (or type CANCEL to exit): ").strip()
-            if new_budget.lower() == 'cancel':
-                return
-            else:
-                new_budget = int(new_budget)
-            # FIX: Ensure new_budget is positive.
-            if new_budget <= 0:
-                print("Budget must be a positive number.")
-                continue
-            if new_budget < company_budget.get('total_allocated_funds'):
-                print("Error: Company budget cannot be lower than allocated funds.")
-                continue
-            while True:
-                confirmation = input(f"Confirm budget update to ${new_budget}? (Y/N): ").strip().lower()
-                if confirmation == 'y':
-                    company_budget['total_budget'] = new_budget
-                    print("Budget updated successfully.")
-                elif confirmation == 'n':
-                    print("Budget update canceled.")
-                else:
-                    print("Invalid input. Please enter 'Y' to confirm or 'N' to cancel.")
-                    continue
-                break
+        # Display section header
+        print("\n" + "=" * 40)
+        print("             ADJUST BUDGET       ")
+        print("=" * 40)
+
+        # Show current budget and allocated funds
+        print(f"📊  Current Budget   : ${company_budget['total_budget']:.2f}")
+        print(f"🔹  Allocated Funds  : ${allocated_funds:.2f}")
+
+        # Request new budget input, ensuring it's a valid float and meets constraints
+        new_budget = get_valid_input(
+            prompt="💡 Enter new budget (or type 'CANCEL' to return): ",
+            validation_func=lambda x: validate_updated_budget(x, allocated_funds),
+            allow_cancel=True,  # Enables users to cancel and exit mid-input
+            conversion_func=float,  # Converts user input to float
+            conversion_error_msg="⚠️  Please enter a valid positive number."  # Custom error message for invalid input
+        )
+
+        # If user cancels, return to the previous menu
+        if new_budget is None:
+            print("\n🔙 Returning to Budget Management Menu...\n")
             return
-        except ValueError:
-            print("Invalid input. Please enter a valid number or type CANCEL to exit.")
+
+        # Ask for confirmation before applying the change
+        if get_confirmation(f"✅ Confirm budget update to ${new_budget:.2f}? (Y/N): "):
+            company_budget["total_budget"] = new_budget  # Update the budget in company_budget dictionary
+            print(f"\n✅ Budget updated successfully to ${new_budget:.2f}. 🎉\n")
+        else:
+            print("\n❌ Budget update canceled.\n")
+
+        return  # Exit the loop after update or cancellation
+
 
 if __name__ == "__main__":
     app_main_menu()
