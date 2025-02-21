@@ -1542,21 +1542,26 @@ def print_projects_report(projects_list):
 
 def budget_management_main_menu():
     while True:
-        print("\n=== Budget Management ===")
-        # FIX: Use company_budget dictionary values directly.
-        print(f"Current Budget: ${company_budget['total_budget']}")
-        print(f"Current Allocated Funds: ${company_budget['total_allocated_funds']}")
-        print("1. Adjust Budget")
-        print("2. Return to Main Menu")
-        
-        menu = input("Enter your menu (1-2): ").strip()
+        print("\n" + "=" * 40)
+        print("     💰 BUDGET MANAGEMENT MENU 💰      ")
+        print("=" * 40)
+        print(f"Current Budget         : ${company_budget['total_budget']:.2f}")
+        print(f"Allocated Funds        : ${company_budget['total_allocated_funds']:.2f}")
+        print("-" * 40)
+        print("1️⃣  Adjust Budget")
+        print("2️⃣  🔙 Return to Main Menu")
+        print("-" * 40)
+
+        menu = input("📌 Select an option (1-2): ").strip()
         
         if menu == "1":
             adjust_budget()
         elif menu == "2":
+            print("\n🔙 Returning to the Main Menu...\n")
             return
         else:
-            print("Invalid input. Please enter a number between 1 and 2.")
+            print("⚠️  Invalid choice! Please enter either 1 or 2.")
+
             
 def adjust_budget():
     global company_budget
