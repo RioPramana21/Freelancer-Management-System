@@ -9,9 +9,9 @@ freelancers = {
         "skills": ["Python", "Machine Learning"],
         "hourly_rate": 60.0,
         "status": "Available",
-        "assigned_project": None,
-        "completed_projects": ["P0001"],
-        "total_earnings": 2400.0
+        "assigned_project": None, # No project assigned, hence status is Available
+        "completed_projects": ["P0001"], # History of completed projects
+        "total_earnings": 2400.0  # Matches P0001 actual_cost
     },
     "FR002": {
         "name": "Bob Smith",
@@ -21,9 +21,9 @@ freelancers = {
         "skills": ["JavaScript", "React"],
         "hourly_rate": 50.0,
         "status": "Assigned",
-        "assigned_project": "P0002",
-        "completed_projects": [],
-        "total_earnings": 0.0
+        "assigned_project": "P0002", # Assigned to P0002, hence status is Assigned
+        "completed_projects": [], # This freelancer has never completed a project
+        "total_earnings": 0.0  # No completed projects yet
     },
     "FR003": {
         "name": "Charlie Davis",
@@ -56,8 +56,8 @@ freelancers = {
         "location": "Seattle",
         "skills": ["C++", "Embedded Systems"],
         "hourly_rate": 80.0,
-        "status": "Available",
-        "assigned_project": None,
+        "status": "Assigned",
+        "assigned_project": "P0010",
         "completed_projects": [],
         "total_earnings": 0.0
     },
@@ -126,19 +126,19 @@ freelancers = {
 projects = {
     "P0001": {
         "name": "AI Chatbot Development",
-        "budget": 3000.0,
+        "budget": 3000.0, # Initial max budget (can't choose freelancer with actual cost > budget)
         "estimated_hours": 40,
         "assigned_freelancer_id": "FR001",
         "status": "Completed",
-        "actual_cost": 2400.0
+        "actual_cost": 2400.0 # actual_cost = assigned freelancer hourly_rate (at time of project creation) * estimated_hours
     },
     "P0002": {
         "name": "E-commerce Website",
-        "budget": 5000.0,
+        "budget": 5000.0, # This field is only used for actual_cost limit validation
         "estimated_hours": 80,
         "assigned_freelancer_id": "FR002",
         "status": "Active",
-        "actual_cost": 0.0
+        "actual_cost": 4000.0 # This field will affect company_budget & freelancer earnings
     },
     "P0003": {
         "name": "Mobile App Development",
@@ -146,7 +146,7 @@ projects = {
         "estimated_hours": 100,
         "assigned_freelancer_id": "FR003",
         "status": "Active",
-        "actual_cost": 0.0
+        "actual_cost": 7000.0
     },
     "P0004": {
         "name": "Data Analysis Dashboard",
@@ -170,7 +170,7 @@ projects = {
         "estimated_hours": 50,
         "assigned_freelancer_id": "FR006",
         "status": "Active",
-        "actual_cost": 0.0
+        "actual_cost": 2250.0
     },
     "P0007": {
         "name": "Cloud Infrastructure Setup",
@@ -186,7 +186,7 @@ projects = {
         "estimated_hours": 60,
         "assigned_freelancer_id": "FR009",
         "status": "Active",
-        "actual_cost": 0.0
+        "actual_cost": 3900.0
     },
     "P0009": {
         "name": "Microservices Architecture",
@@ -200,20 +200,20 @@ projects = {
         "name": "Blockchain Smart Contracts",
         "budget": 6000.0,
         "estimated_hours": 90,
-        "assigned_freelancer_id": None,
+        "assigned_freelancer_id": "FR005",
         "status": "Active",
-        "actual_cost": 0.0
+        "actual_cost": 7200.0
     }
 }
 
 company_budget = {
-    "total_budget": 20000.0,
-    "total_allocated_funds": 10500.0
+    "total_budget": 50000.0, # Total budget allocated to the company
+    "total_allocated_funds": 24350.0 # Total funds allocated to active projects (sum of active projects' actual_cost)
 }
 
 app_state = {
-    "freelancer_id_counter": None,
-    "project_id_counter": None
+    "freelancer_id_counter": None, # Counter to generate unique Freelancer IDs
+    "project_id_counter": None # Counter to generate unique Project IDs
 }
 
 # ================ REUSABLE HELPER FUNCTIONS ================
