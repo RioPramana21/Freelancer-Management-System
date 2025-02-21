@@ -1316,16 +1316,35 @@ def view_freelancers_performance_report():
 
 # ================================================= PROJECT MANAGEMENT MODULE =========================================================
 def project_management_main_menu():
+    """
+    Displays the Project Management Menu and handles user selection.
+
+    Options:
+    1. Review Projects
+    2. Assign Freelancer to Project
+    3. Mark Project as Completed
+    4. Cancel Project
+    5. Return to Main Menu
+
+    The function loops until the user selects option 5 (Return to Main Menu).
+    """
+    
     while True:
-        print("\n=== Project Management ===")
-        print("1. Review Projects")
-        print("2. Assign Freelancer to Project")
-        print("3. Mark Project as Completed")
-        print("4. Cancel Project")
-        print("5. Return to Main Menu")
-        
-        menu = input("Enter your menu (1-5): ").strip()
-        
+        # Display menu header
+        print("\n" + "=" * 40)
+        print("    🏗️ PROJECT MANAGEMENT MENU    ")
+        print("=" * 40)
+        print("1️⃣  Review Projects")
+        print("2️⃣  Assign Freelancer to Project")
+        print("3️⃣  Mark Project as Completed")
+        print("4️⃣  Cancel Project")
+        print("5️⃣  🔙 Return to Main Menu")
+        print("-" * 40)
+
+        # Get user input
+        menu = input("📌 Select an option (1-5): ").strip()
+
+        # Handle user choice
         if menu == "1":
             review_projects()
         elif menu == "2":
@@ -1335,9 +1354,10 @@ def project_management_main_menu():
         elif menu == "4":
             cancel_project()
         elif menu == "5":
+            print("\n🔙 Returning to Main Menu...\n")
             return
         else:
-            print("Invalid input. Please enter a number between 1 and 5.")
+            print("⚠️  Invalid input! Please enter a number between 1 and 5.")
 
 def review_projects():
     """
