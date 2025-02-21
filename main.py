@@ -198,7 +198,7 @@ projects = {
     },
     "P0010": {
         "name": "Blockchain Smart Contracts",
-        "budget": 6000.0,
+        "budget": 8000.0,
         "estimated_hours": 90,
         "assigned_freelancer_id": "FR005",
         "status": "Active",
@@ -287,7 +287,7 @@ def validate_name(name):
     # Regex: Allows A-Z, a-z, spaces, hyphens (-), apostrophes ('), dots (.), commas (,)
     # Prevents leading/trailing `-`, `'`, `.`, `,` and consecutive `--` or `''`
     if not re.match(r"^[A-Za-z]+([-'.,]?[ ]*[A-Za-z]+)*$", name):
-        return False, "❌ Name must contain only letters, spaces, hyphens (-), apostrophes ('), dots (.), or commas (,)."
+        return False, "❌ Name must contain only letters, spaces, hyphens (-), apostrophes ('), dots (.), or commas (,). Consecutive special characters (-'.,) is not allowed."
 
     return True, ""
 
@@ -325,8 +325,10 @@ def validate_location(location):
     """
     if not location:
         return False, "Location cannot be empty."
-    if location.isdigit():
-        return False, "Location cannot be only digits."
+    # Prevents purely numeric names (e.g., "12345")
+    # Ensure project name is not purely punctuation (e.g., "!!!" or "----")
+    if not any(c.isalpha() for c in location):
+            return False, "❌ Location must contain at least one letter."
     if len(location) > 255:
         return False, "Location exceeds maximum length (255 characters)."
     return True, ""
@@ -377,12 +379,9 @@ def validate_project_name(project_name):
         return False, "❌ Project name cannot exceed 255 characters."
 
     # Prevents purely numeric names (e.g., "12345")
-    if project_name.isdigit():
-        return False, "❌ Project name cannot be purely numbers."
-
     # Ensure project name is not purely punctuation (e.g., "!!!" or "----")
-    if all(char in "-'.,!?\" " for char in project_name):
-        return False, "❌ Project name must contain at least one letter or number."
+    if not any(c.isalpha() for c in project_name):
+            return False, "❌ Project name must contain at least one letter."
 
     return True, ""
 
@@ -453,8 +452,8 @@ def display_freelancer_table(filtered_freelancers, title="FREELANCERS"):
     print("=" * 150)
     print(
         f"{'🆔 ID':<12}"
-        f"{'👤 Name':<25}"
-        f"{'🎂 Age':<8}"
+        f"{'👤 Name':<24}"
+        f"{'🎂 Age':<9}"
         f"{'⚧ Gender':<10}"
         f"{'📍 Location':<20}"
         f"{'🛠 Skills':<40}"
