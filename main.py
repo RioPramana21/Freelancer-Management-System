@@ -1,5 +1,19 @@
+# ====================================================================================================
+# Purwadhika - DTIDSOL-02 - Capstone Project Module 1 (Freelancer Management System)
+# ====================================================================================================
+# Author: Rio Pramana
+
+# Freelancer Management System
+# Description: This is a Python program that simulates a Freelancer Management System. The system allows users to manage freelancers, projects, and company budget. 
+# The program provides a command-line interface to interact with the system, including options to add, update, and view freelancers and projects, as well as generate performance reports.
+# The system is designed to store data in memory using dictionaries and lists, and it includes validation checks for user inputs.
+
+# This code is designed to maximize & balance efficiency and readability.
+# ====================================================================================================
+
 import re  # For regex validation
 
+# ================================================== DATA STRUCTURE ==================================================
 freelancers = {
     "FR001": {
         "name": "Alice Johnson",
@@ -313,7 +327,7 @@ def validate_gender(gender):
     Returns:
         (bool, str): Tuple indicating validation status and error message (if any).
     """
-    is_valid = gender in ["Male", "Female"]
+    is_valid = gender in ("Male", "Female")
     return is_valid, "Gender must be Male or Female."
 
 def validate_location(location):
@@ -321,12 +335,13 @@ def validate_location(location):
     Checks:
         - Not empty
         - Not purely digits
+        - Not purely special characters
         - <= 255 chars
     """
     if not location:
         return False, "Location cannot be empty."
     # Prevents purely numeric names (e.g., "12345")
-    # Ensure project name is not purely punctuation (e.g., "!!!" or "----")
+    # Ensure project name is not purely special characters (e.g., "!!!" or "----")
     if not any(c.isalpha() for c in location):
             return False, "❌ Location must contain at least one letter."
     if len(location) > 255:
@@ -407,7 +422,7 @@ def validate_updated_budget(new_budget):
 
 def validate_id(id):
     """
-    Validates that the id input is not empty after stripping whitespace.
+    Validates that the id input is not empty.
 
     Returns:
         (bool, str): Tuple indicating validation status and error message (if any).
@@ -654,7 +669,7 @@ def search_by_id():
 
 def confirm_update(field_name, old_value, new_value):
     """
-    Utility function for final confirmation.
+    Utility function for update's final confirmation.
     Returns True if the user confirms the update, otherwise False.
     """
     print(f"\nYou are about to change '{field_name}' value")
@@ -718,7 +733,7 @@ def display_performance_report(performance_data, total_earnings_sum, title="FREE
               f"{'👤 Name':<20}"
               f"{'✅ Completed Projects':<25}"
               f"{'💰 Hourly Rate':<15}"
-              f"{'💰 Total Earnings':<20}")
+              f"{'💵 Total Earnings':<20}")
     print(header)
     print("-" * table_width)
     
@@ -915,12 +930,6 @@ def app_main_menu():
 def freelancer_management_main_menu():
     """
     Displays the Freelancer Management Menu and handles user selection.
-
-    Flow:
-    1. Show the menu with available options.
-    2. Get user input and ensure it’s valid.
-    3. Call the corresponding function based on user selection.
-    4. Loop until the user chooses to return to the main menu.
     """
 
     while True:
@@ -967,12 +976,12 @@ def hire_new_freelancer():
     and the user can type 'CANCEL' at any prompt to return to the previous menu.
 
     Steps:
-        1. Prompt the user for freelancer name (alphabetic, ≤255 chars).
-        2. Prompt for age (integer ≥18).
+        1. Prompt the user for freelancer name
+        2. Prompt for age
         3. Prompt for gender (Male/Female).
-        4. Prompt for location (non-empty, ≤255 chars, not just digits).
-        5. Prompt for skills (comma-separated, none purely numeric, each ≤255 chars).
-        6. Prompt for hourly rate (float > 0).
+        4. Prompt for location
+        5. Prompt for skills (comma-separated)
+        6. Prompt for hourly rate
         7. Display the collected details and confirm hiring.
         8. If confirmed, generate the freelancer ID (FR###), store the freelancer, and
            increment the global counter. Otherwise, return to the previous menu.
@@ -1016,7 +1025,7 @@ def hire_new_freelancer():
     )
     if gender is None: return
 
-    # 4) LOCATION (raw string, validated for non-digit and ≤255 chars)
+    # 4) LOCATION (raw string, validated)
     location = get_valid_input(
         prompt="📌 Enter location (or 'CANCEL' to return): ",
         validation_func=validate_location,
@@ -1025,7 +1034,7 @@ def hire_new_freelancer():
     )
     if location is None: return
 
-    # 5) SKILLS (comma-separated, validated so none are numeric and each ≤255 chars)
+    # 5) SKILLS (comma-separated, validated)
     skills = get_valid_input(
         prompt="📌 Enter comma-separated skills (or 'CANCEL' to return): ",
         validation_func=validate_skills,
@@ -1190,7 +1199,7 @@ def search_freelancer():
 
 def update_freelancer_info():
     """
-    Allows the admin to update an existing freelancer's information.
+    Allows the user to update an existing freelancer's information.
 
     Steps:
       1. Prompt for a freelancer ID or 'CANCEL' to return.
@@ -1347,7 +1356,7 @@ def update_freelancer_info():
 
 def fire_freelancer():
     """
-    Allows the admin to fire (remove) a freelancer from the system, but only if 
+    Allows the user to fire (remove) a freelancer from the system, but only if 
     the freelancer is not currently assigned to any project.
 
     Steps:
@@ -1359,7 +1368,7 @@ def fire_freelancer():
     """
     print("\n=== Fire a Freelancer ===")
 
-    # If there are no freelancers, bail out early
+    # If there are no freelancers, exit early
     if not freelancers:
         print("No freelancers available to fire.")
         return
@@ -1398,7 +1407,7 @@ def fire_freelancer():
 
 def view_freelancers_performance_report():
     """
-    Displays a menu to view the freelancers' performance reports in different ways.
+    Displays a menu to view the freelancers' performance reports in different sorting ways.
 
     Sorting options:
       1. Default order (sorted by ID ascending)
@@ -1446,15 +1455,6 @@ def view_freelancers_performance_report():
 def project_management_main_menu():
     """
     Displays the Project Management Menu and handles user selection.
-
-    Options:
-    1. Review Projects
-    2. Assign Freelancer to Project
-    3. Mark Project as Completed
-    4. Cancel Project
-    5. Return to Main Menu
-
-    The function loops until the user selects option 5 (Return to Main Menu).
     """
     
     while True:
@@ -1489,12 +1489,12 @@ def project_management_main_menu():
 
 def review_projects():
     """
-    Presents a menu to review projects with three filtering options:
+    Presents a menu to review projects with three options:
       - All projects (sorted by ID)
       - Active projects (currently in progress)
       - Completed projects (finished projects)
     
-    Allows the admin to view project details by entering a Project ID.
+    Allows the user to view project details by entering a Project ID.
     """
 
     while True:
@@ -1536,10 +1536,10 @@ def assign_project_to_freelancer():
     Steps:
       1. Prompt for project name, max budget, and estimated hours.
       2. Filter available freelancers based on (hourly_rate * estimated_hours <= budget).
-      3. If no eligible freelancer is found, allow the admin to adjust the budget.
-      4. Display eligible freelancers in a table and prompt the admin to select one.
+      3. If no eligible freelancer is found, allow the user to adjust the budget.
+      4. Display eligible freelancers in a table and prompt the user to select one.
       5. Compute the project's actual cost using the freelancer's current rate.
-      6. Confirm project details with the admin.
+      6. Confirm project details with the user.
       7. Create the project, update allocated funds, and mark the freelancer as assigned.
     """
 
@@ -1618,7 +1618,7 @@ def assign_project_to_freelancer():
     freelancer_rate = freelancers[chosen_fid]["hourly_rate"]
     actual_cost = freelancer_rate * estimated_hours
 
-    # Step 6: Confirm project details with admin
+    # Step 6: Confirm project details with user
     print("\n" + "=" * 50)
     print("     ✅ CONFIRM NEW PROJECT DETAILS     ")
     print("=" * 50)
@@ -1831,5 +1831,6 @@ def adjust_budget():
 
         return  # Exit the loop after update or cancellation
 
+# Run the program
 if __name__ == "__main__":
     app_main_menu()
