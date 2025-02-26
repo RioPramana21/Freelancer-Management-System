@@ -1,5 +1,3 @@
-### **📄 README.md – Freelancer Management System (FMS)**
-
 # 🚀 Freelancer Management System (FMS)
 
 ## **Overview**
